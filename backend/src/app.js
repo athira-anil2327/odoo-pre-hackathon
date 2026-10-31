@@ -70,6 +70,7 @@ app.use("/api/customers", customersRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/plans", plansRouter);
 app.use("/api/quotations", quotationsRouter);
+app.use("/api/quotes", quotationsRouter);
 app.use("/api/subscriptions", subscriptionsRouter);
 app.use("/api/invoices", invoicesRouter);
 app.use("/api/taxes", taxesRouter);

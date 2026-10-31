@@ -1,5 +1,5 @@
 <script>
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import AppShell from "$lib/components/layout/AppShell.svelte";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
@@ -45,9 +45,13 @@
   let activeTab = $state("quotations");
 
   $effect(() => {
-    const tabParam = $page.url.searchParams.get("tab");
-    if (tabParam === "templates" || tabParam === "quotations") {
-      activeTab = tabParam;
+    try {
+      const tabParam = page.url.searchParams.get("tab");
+      if (tabParam === "templates" || tabParam === "quotations") {
+        activeTab = tabParam;
+      }
+    } catch (e) {
+      // Ignore if page.url is momentarily unavailable
     }
   });
 
@@ -80,12 +84,12 @@
     newTmplDesc = "";
     newTmplValidityDays = 30;
 
-    if ($plansStore.length > 0) {
+    if ($plansStore && $plansStore.length > 0) {
       newTmplPlanId = $plansStore[0].id;
     }
 
     // Default to first product in catalogue
-    const firstProd = $productsStore.length > 0 ? $productsStore[0] : null;
+    const firstProd = $productsStore && $productsStore.length > 0 ? $productsStore[0] : null;
     const firstVariant = firstProd?.variants?.length > 0 ? firstProd.variants[0] : null;
 
     newTmplLines = [
@@ -95,8 +99,8 @@
         variant_id: firstVariant ? firstVariant.id : "",
         variant_name: firstVariant ? `${firstVariant.attribute_name}: ${firstVariant.attribute_value}` : "None",
         quantity: 1,
-        unit_price: firstProd ? Number(firstProd.sales_price) : 0,
-        price_extra: firstVariant ? Number(firstVariant.price_extra) : 0
+        unit_price: firstProd ? Number(firstProd.sales_price || 0) : 0,
+        price_extra: firstVariant ? Number(firstVariant.price_extra || 0) : 0
       }
     ];
 
@@ -104,18 +108,19 @@
   }
 
   function handleProductChange(index, productId) {
-    const prod = $productsStore.find(p => p.id === productId);
+    if (!newTmplLines[index]) return;
+    const prod = ($productsStore || []).find(p => p.id === productId);
     if (!prod) return;
 
     newTmplLines[index].product_id = prod.id;
     newTmplLines[index].product_name = prod.name;
-    newTmplLines[index].unit_price = Number(prod.sales_price) || 0;
+    newTmplLines[index].unit_price = Number(prod.sales_price || 0);
 
     if (prod.variants && prod.variants.length > 0) {
       const v = prod.variants[0];
       newTmplLines[index].variant_id = v.id;
       newTmplLines[index].variant_name = `${v.attribute_name}: ${v.attribute_value}`;
-      newTmplLines[index].price_extra = Number(v.price_extra) || 0;
+      newTmplLines[index].price_extra = Number(v.price_extra || 0);
     } else {
       newTmplLines[index].variant_id = "";
       newTmplLines[index].variant_name = "None";
@@ -124,8 +129,9 @@
   }
 
   function handleVariantChange(index, variantId) {
+    if (!newTmplLines[index]) return;
     const line = newTmplLines[index];
-    const prod = $productsStore.find(p => p.id === line.product_id);
+    const prod = ($productsStore || []).find(p => p.id === line.product_id);
     if (!prod) return;
 
     if (!variantId) {
@@ -139,12 +145,12 @@
     if (v) {
       line.variant_id = v.id;
       line.variant_name = `${v.attribute_name}: ${v.attribute_value}`;
-      line.price_extra = Number(v.price_extra) || 0;
+      line.price_extra = Number(v.price_extra || 0);
     }
   }
 
   function handleAddLine() {
-    const prod = $productsStore.length > 0 ? $productsStore[0] : null;
+    const prod = $productsStore && $productsStore.length > 0 ? $productsStore[0] : null;
     const v = prod?.variants?.length > 0 ? prod.variants[0] : null;
 
     newTmplLines = [
@@ -155,8 +161,8 @@
         variant_id: v ? v.id : "",
         variant_name: v ? `${v.attribute_name}: ${v.attribute_value}` : "None",
         quantity: 1,
-        unit_price: prod ? Number(prod.sales_price) : 0,
-        price_extra: v ? Number(v.price_extra) : 0
+        unit_price: prod ? Number(prod.sales_price || 0) : 0,
+        price_extra: v ? Number(v.price_extra || 0) : 0
       }
     ];
   }
@@ -171,7 +177,8 @@
 
   // Live calculation for template total
   const newTmplSubtotal = $derived(
-    newTmplLines.reduce((acc, line) => {
+    (newTmplLines || []).reduce((acc, line) => {
+      if (!line) return acc;
       const eff = (Number(line.unit_price) || 0) + (Number(line.price_extra) || 0);
       return acc + (Number(line.quantity) || 1) * eff;
     }, 0)
@@ -226,11 +233,11 @@
 
     if (preselectedTmplId) {
       selectedTemplateId = preselectedTmplId;
-    } else if ($templatesStore.length > 0) {
+    } else if ($templatesStore && $templatesStore.length > 0) {
       selectedTemplateId = $templatesStore[0].id;
     }
 
-    if ($customersStore.length > 0) {
+    if ($customersStore && $customersStore.length > 0) {
       selectedCustomerId = $customersStore[0].id;
     }
 
@@ -239,7 +246,7 @@
 
   // Active template selected in create quote modal
   const activeSelectedTemplate = $derived(
-    $templatesStore.find(t => t.id === selectedTemplateId)
+    ($templatesStore || []).find(t => t.id === selectedTemplateId)
   );
 
   // Calculated validity date for the quote
@@ -251,8 +258,8 @@
 
   // Calculated preview lines for the quote
   const previewQuoteLines = $derived.by(() => {
-    if (!activeSelectedTemplate || !activeSelectedTemplate.lines) return [];
-    return activeSelectedTemplate.lines.map(line => {
+    if (!activeSelectedTemplate || !Array.isArray(activeSelectedTemplate.lines)) return [];
+    return activeSelectedTemplate.lines.filter(Boolean).map(line => {
       const qty = Number(line.quantity) || 1;
       const base = Number(line.unit_price) || 0;
       const extra = Number(line.price_extra || line.variant_price_extra) || 0;
@@ -268,7 +275,7 @@
   });
 
   const previewQuoteSubtotal = $derived(
-    previewQuoteLines.reduce((acc, l) => acc + l.subtotal, 0)
+    (previewQuoteLines || []).reduce((acc, l) => acc + (l.subtotal || 0), 0)
   );
   const previewQuoteTax = $derived(previewQuoteSubtotal * 0.18);
   const previewQuoteTotal = $derived(previewQuoteSubtotal + previewQuoteTax);
@@ -281,7 +288,7 @@
     }
     try {
       const q = createQuotationFromTemplate(selectedTemplateId, selectedCustomerId);
-      actionSuccess = `Quotation ${q.quote_number} generated from template with auto-calculated line items and validity date (${q.valid_until}).`;
+      actionSuccess = `Quotation ${q.quote_number || q.id} generated from template with auto-calculated line items and validity date (${q.valid_until}).`;
       showCreateModal = false;
       activeTab = "quotations";
     } catch (e) {
@@ -300,7 +307,7 @@
     actionSuccess = "";
     try {
       const sub = confirmQuotation(quoteId);
-      actionSuccess = `Quotation confirmed successfully! Plan min_quantity validated. Subscription ${sub.subscription_number} generated.`;
+      actionSuccess = `Quotation confirmed successfully! Plan min_quantity validated. Subscription ${sub.subscription_number || sub.id} generated.`;
     } catch (e) {
       actionError = e.message;
     }
@@ -311,18 +318,33 @@
     showViewQuoteModal = true;
   }
 
-  function getCustomerName(customerId) {
-    const c = $customersStore.find(cust => cust.id === customerId);
+  function getCustomerName(customerId, q = null) {
+    if (q && q.customer_name) {
+      return `${q.customer_name}${q.customer_company ? ` (${q.customer_company})` : ""}`;
+    }
+    if (!customerId) return "—";
+    const c = ($customersStore || []).find(cust => cust.id === customerId || cust.customer_number === customerId);
     return c ? `${c.name} (${c.company})` : customerId;
   }
 
-  function getPlanName(planId) {
-    const p = $plansStore.find(pl => pl.id === planId);
+  function getPlanName(planId, q = null) {
+    if (q && q.plan_name) return q.plan_name;
+    if (!planId) return "—";
+    const p = ($plansStore || []).find(pl => pl.id === planId);
     return p ? p.name : planId;
   }
 
   function getPlanObject(planId) {
-    return $plansStore.find(pl => pl.id === planId);
+    if (!planId) return null;
+    return ($plansStore || []).find(pl => pl.id === planId) || null;
+  }
+
+  function formatDate(val) {
+    if (!val) return "—";
+    if (typeof val === "string" && val.includes("T")) {
+      return val.split("T")[0];
+    }
+    return String(val);
   }
 </script>
 
@@ -348,7 +370,7 @@
                 : "text-[#586f73] hover:text-[#122b2e]"
             }`}
           >
-            Quotations ({$quotationsStore.length})
+            Quotations ({($quotationsStore || []).length})
           </button>
           <button
             onclick={() => (activeTab = "templates")}
@@ -358,7 +380,7 @@
                 : "text-[#586f73] hover:text-[#122b2e]"
             }`}
           >
-            Quotation Templates ({$templatesStore.length})
+            Quotation Templates ({($templatesStore || []).length})
           </button>
         </div>
 
@@ -427,39 +449,44 @@
               </Table.Row>
             </Table.Header>
             <Table.Body class="text-xs">
-              {#if $quotationsStore.length === 0}
+              {#if ($quotationsStore || []).length === 0}
                 <Table.Row>
-                  <Table.Cell colspan={8} class="text-center py-8 text-[#7e9599]">
+                  <Table.Cell colspan="8" class="text-center py-8 text-[#7e9599]">
                     No quotations drafted yet. Click "Create Quote from Template" to start.
                   </Table.Cell>
                 </Table.Row>
               {/if}
-              {#each $quotationsStore as q}
+              {#each ($quotationsStore || []).filter(Boolean) as q}
+                {@const statusLower = String(q.status || "draft").toLowerCase()}
+                {@const convertedSub = q.converted_subscription_id || q.converted_subscription_number}
+
                 <Table.Row class="transition-all hover:bg-[#f8fafb] border-[#f4f7f8]">
-                  <Table.Cell class="py-3 px-4 font-bold text-[#122b2e]">{q.quote_number || q.id}</Table.Cell>
-                  <Table.Cell class="py-3 px-4 font-medium text-[#122b2e]">{getCustomerName(q.customer_id)}</Table.Cell>
-                  <Table.Cell class="py-3 px-4 text-[#586f73]">{getPlanName(q.plan_id)}</Table.Cell>
+                  <Table.Cell class="py-3 px-4 font-bold text-[#122b2e]">{q.quotation_number || q.quote_number || q.id}</Table.Cell>
+                  <Table.Cell class="py-3 px-4 font-medium text-[#122b2e]">{getCustomerName(q.customer_id, q)}</Table.Cell>
+                  <Table.Cell class="py-3 px-4 text-[#586f73]">{getPlanName(q.plan_id, q)}</Table.Cell>
                   <Table.Cell class="py-3 px-4 text-[#7e9599]">
                     <span class="inline-flex items-center gap-1">
-                      <Clock class="w-3 h-3 text-zinc-400" /> {q.valid_until}
+                      <Clock class="w-3 h-3 text-zinc-400" /> {formatDate(q.valid_until)}
                     </span>
                   </Table.Cell>
-                  <Table.Cell class="py-3 px-4 text-right font-bold text-[#122b2e]">${Number(q.total_amount).toFixed(2)}</Table.Cell>
+                  <Table.Cell class="py-3 px-4 text-right font-bold text-[#122b2e]">
+                    ${Number(q.total_amount || 0).toFixed(2)}
+                  </Table.Cell>
                   <Table.Cell class="py-3 px-4 text-center">
                     <span class={`inline-flex items-center text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${
-                      q.status === 'Confirmed'
+                      statusLower === 'confirmed'
                         ? 'bg-[#e6f4f2] text-[#143e42] border-[#bde4df]'
-                        : q.status === 'Quotation'
+                        : statusLower === 'quotation'
                         ? 'bg-blue-50 text-blue-700 border-blue-200'
                         : 'bg-zinc-100 text-zinc-600 border-zinc-200'
                     }`}>
-                      {q.status}
+                      {q.status ? (q.status.charAt(0).toUpperCase() + q.status.slice(1)) : 'Draft'}
                     </span>
                   </Table.Cell>
                   <Table.Cell class="py-3 px-4 text-center text-[#586f73] font-medium">
-                    {#if q.converted_subscription_id}
+                    {#if convertedSub}
                       <span class="inline-flex items-center gap-1 text-[11px] font-bold text-[#143e42] bg-[#e6f4f2] px-2 py-0.5 rounded border border-[#bde4df]">
-                        <Repeat class="w-3 h-3" /> {q.converted_subscription_id}
+                        <Repeat class="w-3 h-3" /> {convertedSub}
                       </span>
                     {:else}
                       <span class="text-zinc-400">—</span>
@@ -477,7 +504,7 @@
                       </button>
 
                       <!-- Action: Send Quote (Draft -> Quotation) -->
-                      {#if q.status === 'Draft'}
+                      {#if statusLower === 'draft'}
                         <Button
                           onclick={() => handleSendQuote(q.id)}
                           size="xs"
@@ -488,7 +515,7 @@
                       {/if}
 
                       <!-- Action: Confirm Quote (Quotation -> Confirmed) -->
-                      {#if q.status === 'Quotation'}
+                      {#if statusLower === 'quotation'}
                         <Button
                           onclick={() => handleConfirmQuote(q.id)}
                           size="xs"
@@ -511,9 +538,9 @@
     <!-- ========================================================================= -->
     {:else}
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {#each $templatesStore as tmpl}
+        {#each ($templatesStore || []).filter(Boolean) as tmpl}
           {@const plan = getPlanObject(tmpl.plan_id)}
-          {@const tmplSub = (tmpl.lines || []).reduce((acc, l) => {
+          {@const tmplSub = (tmpl.lines || []).filter(Boolean).reduce((acc, l) => {
             const eff = (Number(l.unit_price) || 0) + (Number(l.price_extra || l.variant_price_extra) || 0);
             return acc + (Number(l.quantity) || 1) * eff;
           }, 0)}
@@ -527,7 +554,7 @@
                   <Layers class="w-3 h-3" /> Template #{tmpl.id}
                 </span>
                 <span class="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                  <Clock class="w-3 h-3 mr-1" /> {tmpl.validity_days} Days Validity
+                  <Clock class="w-3 h-3 mr-1" /> {tmpl.validity_days || 30} Days Validity
                 </span>
               </div>
               <Card.Title class="text-base font-bold text-[#122b2e] mt-1.5">{tmpl.name}</Card.Title>
@@ -540,7 +567,7 @@
                 <div class="flex items-center gap-1.5">
                   <Repeat class="w-3.5 h-3.5 text-[#183f42]" />
                   <span class="text-[#586f73]">Target Plan:</span>
-                  <b class="text-[#122b2e]">{plan ? plan.name : tmpl.plan_id}</b>
+                  <b class="text-[#122b2e]">{plan ? plan.name : (tmpl.plan_name || tmpl.plan_id)}</b>
                 </div>
                 {#if plan}
                   <span class="text-[10px] font-semibold text-[#183f42] uppercase bg-[#e6f4f2] px-2 py-0.5 rounded border border-[#bde4df]">
@@ -556,7 +583,7 @@
                   <span>Effective Total</span>
                 </div>
 
-                {#each (tmpl.lines || []) as l}
+                {#each (tmpl.lines || []).filter(Boolean) as l}
                   {@const extra = Number(l.price_extra || l.variant_price_extra) || 0}
                   {@const base = Number(l.unit_price) || 0}
                   {@const eff = base + extra}
@@ -663,7 +690,7 @@
                 bind:value={newTmplPlanId}
                 class="w-full h-9 bg-white border border-[#e5ecee] rounded-xl px-2.5 mt-1 text-xs focus:border-[#183f42]"
               >
-                {#each $plansStore as p}
+                {#each ($plansStore || []) as p}
                   <option value={p.id}>{p.name} ({p.billing_frequency} • Min Qty: {p.min_quantity})</option>
                 {/each}
               </select>
@@ -711,8 +738,8 @@
           </div>
 
           <div class="space-y-2.5">
-            {#each newTmplLines as line, idx}
-              {@const prod = $productsStore.find(p => p.id === line.product_id)}
+            {#each (newTmplLines || []) as line, idx}
+              {@const prod = ($productsStore || []).find(p => p.id === line.product_id)}
               {@const hasVariants = prod && prod.variants && prod.variants.length > 0}
               {@const effUnitPrice = (Number(line.unit_price) || 0) + (Number(line.price_extra) || 0)}
               {@const lineTotal = (Number(line.quantity) || 1) * effUnitPrice}
@@ -743,8 +770,8 @@
                       onchange={(e) => handleProductChange(idx, e.target.value)}
                       class="w-full h-8 bg-[#f8fafb] border border-[#e5ecee] rounded-lg px-2 mt-1 text-xs focus:border-[#183f42]"
                     >
-                      {#each $productsStore as p}
-                        <option value={p.id}>{p.name} (${Number(p.sales_price).toFixed(2)})</option>
+                      {#each ($productsStore || []) as p}
+                        <option value={p.id}>{p.name} (${Number(p.sales_price || 0).toFixed(2)})</option>
                       {/each}
                     </select>
                   </div>
@@ -761,7 +788,7 @@
                         <option value="">No Variant / Base ($0.00)</option>
                         {#each prod.variants as v}
                           <option value={v.id}>
-                            {v.attribute_name}: {v.attribute_value} (+${Number(v.price_extra).toFixed(2)})
+                            {v.attribute_name}: {v.attribute_value} (+${Number(v.price_extra || 0).toFixed(2)})
                           </option>
                         {/each}
                       </select>
@@ -884,7 +911,7 @@
               bind:value={selectedCustomerId}
               class="w-full h-9 bg-[#f8fafb] border border-[#e5ecee] rounded-xl px-2.5 mt-1 text-xs focus:border-[#183f42]"
             >
-              {#each $customersStore as c}
+              {#each ($customersStore || []) as c}
                 <option value={c.id}>{c.name} — {c.company}</option>
               {/each}
             </select>
@@ -897,8 +924,8 @@
               bind:value={selectedTemplateId}
               class="w-full h-9 bg-[#f8fafb] border border-[#e5ecee] rounded-xl px-2.5 mt-1 text-xs focus:border-[#183f42]"
             >
-              {#each $templatesStore as t}
-                <option value={t.id}>{t.name} ({t.validity_days} Days)</option>
+              {#each ($templatesStore || []) as t}
+                <option value={t.id}>{t.name} ({t.validity_days || 30} Days)</option>
               {/each}
             </select>
           </div>
@@ -920,7 +947,7 @@
             <div class="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-[#edf2f3]">
               <div>
                 <span class="text-[#7e9599]">Target Plan:</span>
-                <b class="text-[#122b2e] block">{plan ? plan.name : activeSelectedTemplate.plan_id}</b>
+                <b class="text-[#122b2e] block">{plan ? plan.name : (activeSelectedTemplate.plan_name || activeSelectedTemplate.plan_id)}</b>
               </div>
               <div>
                 <span class="text-[#7e9599]">Plan Frequency:</span>
@@ -988,7 +1015,7 @@
     <div class="bg-white rounded-2xl border border-zinc-200 shadow-xl max-w-lg w-full p-5 text-xs animate-in fade-in zoom-in-95 duration-150">
       <div class="flex items-center justify-between pb-3 border-b border-zinc-100 mb-3">
         <div>
-          <h3 class="font-bold text-[#122b2e] text-sm">{selectedQuote.quote_number || selectedQuote.id} Details</h3>
+          <h3 class="font-bold text-[#122b2e] text-sm">{selectedQuote.quotation_number || selectedQuote.quote_number || selectedQuote.id} Details</h3>
           <p class="text-[11px] text-[#7e9599]">Client proposal breakdown &amp; line formulas</p>
         </div>
         <button onclick={() => (showViewQuoteModal = false)} class="p-1 rounded text-zinc-400 hover:text-zinc-600">
@@ -998,18 +1025,23 @@
 
       <div class="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
         <div class="grid grid-cols-2 gap-2 p-3 bg-[#f8fafb] border border-[#edf2f3] rounded-xl text-[11px]">
-          <div><span class="text-[#7e9599]">Customer:</span> <b class="text-[#122b2e] block">{getCustomerName(selectedQuote.customer_id)}</b></div>
+          <div><span class="text-[#7e9599]">Customer:</span> <b class="text-[#122b2e] block">{getCustomerName(selectedQuote.customer_id, selectedQuote)}</b></div>
           <div><span class="text-[#7e9599]">Status:</span> <b class="text-[#183f42] block">{selectedQuote.status}</b></div>
-          <div><span class="text-[#7e9599]">Issue Date:</span> <b class="text-[#122b2e] block">{selectedQuote.issue_date}</b></div>
-          <div><span class="text-[#7e9599]">Valid Until:</span> <b class="text-[#122b2e] block">{selectedQuote.valid_until}</b></div>
+          <div><span class="text-[#7e9599]">Issue Date:</span> <b class="text-[#122b2e] block">{formatDate(selectedQuote.issue_date)}</b></div>
+          <div><span class="text-[#7e9599]">Valid Until:</span> <b class="text-[#122b2e] block">{formatDate(selectedQuote.valid_until)}</b></div>
         </div>
 
         <div class="space-y-1.5">
           <span class="text-[10px] font-bold text-[#8c9ba5] uppercase tracking-wider block">Line Items (Formula Breakdown):</span>
-          {#each (selectedQuote.lines || []) as l}
+          {#if !selectedQuote.lines || selectedQuote.lines.length === 0}
+            <div class="p-3 text-center text-zinc-400 bg-[#f8fafb] rounded-xl">
+              No individual lines itemized for this quotation.
+            </div>
+          {/if}
+          {#each (selectedQuote.lines || []).filter(Boolean) as l}
             <div class="p-2.5 rounded-xl border border-[#edf2f3] bg-white space-y-1">
               <div class="flex items-center justify-between font-bold text-[#122b2e]">
-                <span>{l.product_name}</span>
+                <span>{l.product_name || "Product"}</span>
                 <span>${Number(l.line_total || (l.quantity * (l.unit_price + (l.price_extra || 0)))).toFixed(2)}</span>
               </div>
               <div class="text-[11px] text-[#586f73] flex flex-wrap gap-2">
@@ -1029,10 +1061,10 @@
 
         <!-- Totals Summary -->
         <div class="pt-2 border-t border-zinc-100 space-y-1 text-right text-xs">
-          <div><span class="text-[#7e9599]">Subtotal:</span> <b class="text-[#122b2e]">${Number(selectedQuote.subtotal).toFixed(2)}</b></div>
-          <div><span class="text-[#7e9599]">Tax Amount (18%):</span> <b class="text-[#122b2e]">${Number(selectedQuote.tax_amount).toFixed(2)}</b></div>
+          <div><span class="text-[#7e9599]">Subtotal:</span> <b class="text-[#122b2e]">${Number(selectedQuote.subtotal || 0).toFixed(2)}</b></div>
+          <div><span class="text-[#7e9599]">Tax Amount (18%):</span> <b class="text-[#122b2e]">${Number(selectedQuote.tax_amount || 0).toFixed(2)}</b></div>
           <div class="text-sm font-extrabold text-[#183f42] pt-1">
-            <span>Total Quotation:</span> ${Number(selectedQuote.total_amount).toFixed(2)}
+            <span>Total Quotation:</span> ${Number(selectedQuote.total_amount || 0).toFixed(2)}
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 <script>
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -24,8 +24,8 @@
     Building2
   } from "lucide-svelte";
 
-  const token = $derived($page.url.searchParams.get("token") || "");
-  const emailParam = $derived($page.url.searchParams.get("email") || "");
+  const token = $derived(page.url.searchParams.get("token") || "");
+  const emailParam = $derived(page.url.searchParams.get("email") || "");
 
   let password = $state("");
   let confirmPassword = $state("");
