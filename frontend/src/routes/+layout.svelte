@@ -1,6 +1,7 @@
 <script>
 	import '../app.css';
 	import { isAuthenticated } from '$lib/stores/auth.js';
+	import { syncWithBackend } from '$lib/stores/coreManagement.js';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -16,6 +17,10 @@
 				goto('/signin');
 			} else if ($isAuthenticated && isAuthPage) {
 				goto('/admin');
+			}
+
+			if ($isAuthenticated) {
+				syncWithBackend();
 			}
 		}
 	});

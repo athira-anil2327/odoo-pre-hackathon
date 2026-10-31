@@ -1,6 +1,7 @@
 import { writable, get } from "svelte/store";
 import { browser } from "$app/environment";
 import { addCustomer } from "./coreManagement.js";
+import { authApi } from "$lib/api.js";
 
 // Enterprise Password Policy Validator:
 // 1. More than 8 characters (length >= 9)
@@ -134,11 +135,28 @@ const defaultUser = {
   status: "Active"
 };
 
+function getSavedUser() {
+  if (browser) {
+    const saved = localStorage.getItem("bl_user") || localStorage.getItem("bl_current_user");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to parse saved user:", e);
+      }
+    }
+  }
+  return defaultUser;
+}
+
 const initialAuth = browser ? localStorage.getItem("bl_auth") === "true" : false;
 export const isAuthenticated = writable(initialAuth);
-export const currentUser = writable(getStored("bl_current_user", defaultUser));
+export const currentUser = writable(getSavedUser());
 if (browser) {
-  currentUser.subscribe(val => setStored("bl_current_user", val));
+  currentUser.subscribe(val => {
+    setStored("bl_user", val);
+    setStored("bl_current_user", val);
+  });
 }
 
 // Email uniqueness check (case-insensitive)
@@ -270,27 +288,72 @@ export function resetPasswordWithToken(token, newPassword) {
   return { success: true, email };
 }
 
-export function login(userData = {}) {
-  currentUser.update(user => ({
-    ...user,
-    ...userData,
-    avatar: (userData.name || user.name)
+export async function loginWithBackend(email, password) {
+  const res = await authApi.login(email, password);
+  if (!res.success) {
+    throw new Error(res.error?.message || "Authentication failed");
+  }
+
+  const { token, user, customer } = res.data;
+
+  const userData = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role === "admin" ? "Administrator" : user.role === "staff" ? "Staff Operations" : "Customer Portal",
+    company: customer?.company || (user.role === "admin" ? "Brightloop Software Inc." : user.role === "staff" ? "Brightloop Staff" : user.name),
+    customerId: customer?.customer_number || customer?.id || null,
+    phone: customer?.phone || "",
+    avatar: (user.name || "User")
       .split(" ")
       .map(n => n[0])
       .join("")
       .slice(0, 2)
       .toUpperCase()
-  }));
+  };
+
+  if (browser) {
+    localStorage.setItem("bl_token", token);
+    localStorage.setItem("bl_auth", "true");
+    localStorage.setItem("bl_user", JSON.stringify(userData));
+    localStorage.setItem("bl_current_user", JSON.stringify(userData));
+  }
+
+  currentUser.set(userData);
   isAuthenticated.set(true);
+
+  return { user: userData, token };
+}
+
+export function login(userData = {}) {
+  const merged = {
+    ...defaultUser,
+    ...userData,
+    avatar: (userData.name || defaultUser.name)
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase()
+  };
+
+  currentUser.set(merged);
+  isAuthenticated.set(true);
+
   if (browser) {
     localStorage.setItem("bl_auth", "true");
+    localStorage.setItem("bl_user", JSON.stringify(merged));
+    localStorage.setItem("bl_current_user", JSON.stringify(merged));
   }
 }
 
 export function logout() {
   isAuthenticated.set(false);
+  currentUser.set(defaultUser);
   if (browser) {
     localStorage.removeItem("bl_auth");
+    localStorage.removeItem("bl_token");
+    localStorage.removeItem("bl_user");
     localStorage.removeItem("bl_current_user");
   }
 }

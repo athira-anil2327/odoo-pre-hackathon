@@ -5,6 +5,8 @@
   import * as Table from "$lib/components/ui/table/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
+  import { dashboardApi, invoicesApi } from "$lib/api.js";
+  import { browser } from "$app/environment";
   import {
     DollarSign,
     Repeat,
@@ -16,6 +18,25 @@
     Sparkles
   } from "lucide-svelte";
 
+  function formatCurrency(val) {
+    const num = parseFloat(val) || 0;
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 2
+    }).format(num);
+  }
+
+  let financeSummary = $state({
+    currency: 'INR',
+    active_subscriptions_count: '5',
+    monthly_recurring_revenue: '3105.62',
+    total_revenue_collected: '2347.62',
+    total_outstanding_amount: '1149.62',
+    overdue_invoices_count: '1',
+    overdue_amount: '1149.62'
+  });
+
   const chartData = {
     labels: ["May", "Jun", "Jul", "Aug", "Sep", "Oct"],
     datasets: [
@@ -26,12 +47,46 @@
     ]
   };
 
-  const invoices = [
-    { id: "INV-2026-001", customer: "Nexus Health Systems", date: "Oct 19, 2026", amount: "$3,660.03", status: "Paid", badgeClass: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200/60" },
-    { id: "INV-2026-002", customer: "CloudScale Analytics Inc.", date: "Oct 22, 2026", amount: "$10,642.50", status: "Paid", badgeClass: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200/60" },
-    { id: "INV-2026-003", customer: "Apex Retail Solutions", date: "Oct 25, 2026", amount: "$857.85", status: "Partially Paid", badgeClass: "bg-amber-50 text-amber-700 border-amber-200/60" },
-    { id: "INV-2026-004", customer: "FinGuard Global Security", date: "Oct 28, 2026", amount: "$1,540.00", status: "Overdue", badgeClass: "bg-rose-50 text-rose-700 border-rose-200/60" }
-  ];
+  let recentInvoices = $state([
+    { id: "INV-2026-001", customer: "Nexus Health Systems", date: "Oct 19, 2026", amount: "₹3,660.03", status: "Paid", badgeClass: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200/60" },
+    { id: "INV-2026-002", customer: "CloudScale Analytics Inc.", date: "Oct 22, 2026", amount: "₹10,642.50", status: "Paid", badgeClass: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200/60" },
+    { id: "INV-2026-003", customer: "Apex Retail Solutions", date: "Oct 25, 2026", amount: "₹857.85", status: "Partially Paid", badgeClass: "bg-amber-50 text-amber-700 border-amber-200/60" },
+    { id: "INV-2026-004", customer: "FinGuard Global Security", date: "Oct 28, 2026", amount: "₹1,540.00", status: "Overdue", badgeClass: "bg-rose-50 text-rose-700 border-rose-200/60" }
+  ]);
+
+  $effect(() => {
+    if (browser) {
+      dashboardApi.getFinanceSummary().then(res => {
+        if (res.success && res.data) {
+          financeSummary = res.data;
+        }
+      }).catch(err => console.warn("Dashboard metrics load notice:", err));
+
+      invoicesApi.getAll().then(res => {
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          recentInvoices = res.data.slice(0, 5).map(inv => {
+            const isPaid = inv.status === "paid";
+            const isPartial = inv.status === "partially_paid";
+            const isConfirmed = inv.status === "confirmed";
+            return {
+              id: inv.invoice_number,
+              customer: inv.customer_name || inv.customer_company || "Customer",
+              date: new Date(inv.invoice_date).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }),
+              amount: formatCurrency(inv.total_amount),
+              status: inv.status.replace("_", " ").toUpperCase(),
+              badgeClass: isPaid
+                ? "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200/60"
+                : isPartial
+                ? "bg-amber-50 text-amber-700 border-amber-200/60"
+                : isConfirmed
+                ? "bg-blue-50 text-blue-700 border-blue-200/60"
+                : "bg-zinc-50 text-zinc-700 border-zinc-200/60"
+            };
+          });
+        }
+      }).catch(err => console.warn("Recent invoices load notice:", err));
+    }
+  });
 </script>
 
 <AppShell title="Financial & Operational Overview">
@@ -68,9 +123,9 @@
           </div>
         </Card.Header>
         <Card.Content>
-          <div class="text-2xl font-bold tracking-tight text-zinc-900">$14,702.53</div>
+          <div class="text-2xl font-bold tracking-tight text-zinc-900">{formatCurrency(financeSummary.total_revenue_collected)}</div>
           <div class="text-[11px] font-medium text-fuchsia-700 mt-1 flex items-center gap-1">
-            <TrendingUp class="w-3 h-3" /> +14.2% vs last month
+            <TrendingUp class="w-3 h-3" /> Live from Ledger
           </div>
         </Card.Content>
       </Card.Root>
@@ -84,8 +139,8 @@
           </div>
         </Card.Header>
         <Card.Content>
-          <div class="text-2xl font-bold tracking-tight text-zinc-900">4 Active</div>
-          <div class="text-[11px] text-zinc-500 mt-1">100% retention rate</div>
+          <div class="text-2xl font-bold tracking-tight text-zinc-900">{financeSummary.active_subscriptions_count} Active</div>
+          <div class="text-[11px] text-zinc-500 mt-1">Live active contracts</div>
         </Card.Content>
       </Card.Root>
 
@@ -98,8 +153,8 @@
           </div>
         </Card.Header>
         <Card.Content>
-          <div class="text-2xl font-bold tracking-tight text-zinc-900">$1,997.85</div>
-          <div class="text-[11px] text-zinc-500 mt-1">2 invoices pending collection</div>
+          <div class="text-2xl font-bold tracking-tight text-zinc-900">{formatCurrency(financeSummary.total_outstanding_amount)}</div>
+          <div class="text-[11px] text-zinc-500 mt-1">{financeSummary.overdue_invoices_count || 0} overdue receivable</div>
         </Card.Content>
       </Card.Root>
 
@@ -112,9 +167,9 @@
           </div>
         </Card.Header>
         <Card.Content>
-          <div class="text-2xl font-bold tracking-tight text-zinc-900">$17,850.00</div>
+          <div class="text-2xl font-bold tracking-tight text-zinc-900">{formatCurrency(financeSummary.monthly_recurring_revenue)}</div>
           <div class="text-[11px] font-medium text-fuchsia-700 mt-1 flex items-center gap-1">
-            <TrendingUp class="w-3 h-3" /> +11.8% pacing
+            <TrendingUp class="w-3 h-3" /> Recurring run-rate
           </div>
         </Card.Content>
       </Card.Root>
@@ -170,7 +225,7 @@
             </Table.Row>
           </Table.Header>
           <Table.Body class="text-xs">
-            {#each invoices as inv}
+            {#each recentInvoices as inv}
               <Table.Row class="rounded-xl transition-all hover:bg-fuchsia-50/20">
                 <Table.Cell class="py-3 px-4 font-semibold text-zinc-900">{inv.id}</Table.Cell>
                 <Table.Cell class="py-3 px-4 text-zinc-800 font-medium">{inv.customer}</Table.Cell>

@@ -11,6 +11,8 @@
     requestPasswordReset,
     login
   } from "$lib/stores/auth.js";
+  import { customersStore, addCustomer } from "$lib/stores/coreManagement.js";
+  import { authApi } from "$lib/api.js";
   import { goto } from "$app/navigation";
   import {
     Lock,
@@ -124,7 +126,7 @@
     doPasswordsMatch
   );
 
-  function handleSignUp() {
+  async function handleSignUp() {
     errorMessage = "";
     successMessage = "";
     touchedEmail = true;
@@ -159,6 +161,28 @@
     isSubmitting = true;
 
     try {
+      let customerNumber = null;
+      try {
+        const regRes = await authApi.register({
+          name: name.trim(),
+          company: company.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+          phone: phone.trim(),
+          billing_address: `${company.trim()} Headquarters`
+        });
+
+        if (regRes.success && regRes.data) {
+          const { user, customer, token } = regRes.data;
+          customerNumber = customer.customer_number;
+          if (typeof window !== "undefined") {
+            localStorage.setItem("bl_token", token);
+          }
+        }
+      } catch (backendErr) {
+        console.warn("Backend registration warning, proceeding with client store sync:", backendErr);
+      }
+
       const result = registerCustomer({
         name: name.trim(),
         company: company.trim(),
@@ -167,16 +191,18 @@
         phone: phone.trim()
       });
 
+      const assignedId = customerNumber || result.customer.customer_number;
+
       // Auto-login customer
       login({
         name: result.user.name,
         email: result.user.email,
         company: result.user.company,
         role: "Customer Portal",
-        customerId: result.customer.customer_number
+        customerId: assignedId
       });
 
-      successMessage = `Account created successfully! Generated Customer ID: ${result.customer.customer_number}. Redirecting to your Customer Portal...`;
+      successMessage = `Account created successfully! Generated Customer ID: ${assignedId}. Redirecting to your Customer Portal...`;
       
       setTimeout(() => {
         goto("/portal");

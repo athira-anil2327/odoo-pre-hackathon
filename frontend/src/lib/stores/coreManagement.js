@@ -1,5 +1,12 @@
 import { writable, derived } from "svelte/store";
 import { browser } from "$app/environment";
+import {
+  productsApi,
+  plansApi,
+  customersApi,
+  quotationsApi,
+  subscriptionsApi
+} from "$lib/api.js";
 
 // Initial seed data aligned with Brightloop schema & hackathon scenarios
 const initialProducts = [
@@ -509,6 +516,72 @@ if (browser) {
   eventsStore.subscribe(val => persistStore("events", val));
 }
 
+// Hydrate live data from backend PostgreSQL database with non-destructive merge
+export async function syncWithBackend() {
+  if (!browser) return;
+  try {
+    const [pRes, plRes, cRes, tRes, qRes, sRes] = await Promise.allSettled([
+      productsApi.getAll(),
+      plansApi.getAll(),
+      customersApi.getAll(),
+      quotationsApi.getTemplates(),
+      quotationsApi.getAll(),
+      subscriptionsApi.getAll()
+    ]);
+
+    if (pRes.status === "fulfilled" && pRes.value.success && Array.isArray(pRes.value.data) && pRes.value.data.length > 0) {
+      productsStore.update(current => {
+        const dbIds = new Set(pRes.value.data.map(p => p.id));
+        const localOnly = current.filter(p => !dbIds.has(p.id) && String(p.id).startsWith("PROD-"));
+        return [...localOnly, ...pRes.value.data];
+      });
+    }
+    if (plRes.status === "fulfilled" && plRes.value.success && Array.isArray(plRes.value.data) && plRes.value.data.length > 0) {
+      plansStore.update(current => {
+        const dbIds = new Set(plRes.value.data.map(p => p.id));
+        const localOnly = current.filter(p => !dbIds.has(p.id) && String(p.id).startsWith("PLAN-"));
+        return [...localOnly, ...plRes.value.data];
+      });
+    }
+    if (cRes.status === "fulfilled" && cRes.value.success && Array.isArray(cRes.value.data) && cRes.value.data.length > 0) {
+      customersStore.update(current => {
+        const dbIds = new Set(cRes.value.data.map(c => c.id));
+        const localOnly = current.filter(c => !dbIds.has(c.id) && String(c.id).startsWith("CUST-"));
+        return [...localOnly, ...cRes.value.data];
+      });
+    }
+    if (tRes.status === "fulfilled" && tRes.value.success && Array.isArray(tRes.value.data) && tRes.value.data.length > 0) {
+      templatesStore.update(current => {
+        const dbIds = new Set(tRes.value.data.map(t => t.id));
+        const localOnly = current.filter(t => !dbIds.has(t.id) && String(t.id).startsWith("TMPL-"));
+        return [...localOnly, ...tRes.value.data];
+      });
+    }
+    if (qRes.status === "fulfilled" && qRes.value.success && Array.isArray(qRes.value.data) && qRes.value.data.length > 0) {
+      const normalizedQuotes = qRes.value.data.map(q => ({
+        ...q,
+        quote_number: q.quotation_number || q.quote_number,
+        quotation_number: q.quotation_number || q.quote_number
+      }));
+      // Merge: preserve local drafts so data is NEVER wiped out on browser refresh
+      quotationsStore.update(current => {
+        const dbIds = new Set(normalizedQuotes.map(q => q.id));
+        const localOnly = current.filter(q => !dbIds.has(q.id) && String(q.id).startsWith("QUO-"));
+        return [...localOnly, ...normalizedQuotes];
+      });
+    }
+    if (sRes.status === "fulfilled" && sRes.value.success && Array.isArray(sRes.value.data) && sRes.value.data.length > 0) {
+      subscriptionsStore.update(current => {
+        const dbIds = new Set(sRes.value.data.map(s => s.id));
+        const localOnly = current.filter(s => !dbIds.has(s.id) && String(s.id).startsWith("SUB-"));
+        return [...localOnly, ...sRes.value.data];
+      });
+    }
+  } catch (err) {
+    console.warn("Backend sync notice:", err);
+  }
+}
+
 // Mathematical date computation based on plan frequency
 export function calculateNextBillingDate(startDateStr, frequency) {
   const d = new Date(startDateStr);
@@ -709,11 +782,57 @@ export function createQuotationFromTemplate(templateId, customerId, customLines 
   };
 
   quotationsStore.update(list => [newQuote, ...list]);
+
+  // Persist directly to backend PostgreSQL database
+  if (browser) {
+    let customer = null;
+    customersStore.subscribe(val => {
+      customer = val.find(c => c.id === customerId || c.customer_number === customerId);
+    })();
+
+    const dbCustId = customer?.id || customerId;
+    const dbTmplId = template.id && template.id.length > 20 ? template.id : null;
+
+    quotationsApi.create({
+      customer_id: dbCustId,
+      plan_id: template.plan_id,
+      template_id: dbTmplId,
+      valid_until: validUntil,
+      payment_terms: "Net 30",
+      notes: `Instantiated from template '${template.name}'`,
+      lines: processedLines.map(l => ({
+        product_id: l.product_id,
+        variant_id: l.variant_id,
+        quantity: l.quantity,
+        unit_price: l.unit_price
+      }))
+    }).then(res => {
+      if (res.success && res.data) {
+        const saved = res.data;
+        quotationsStore.update(list =>
+          list.map(q =>
+            q.id === quoteNumber
+              ? {
+                  ...q,
+                  id: saved.id,
+                  quote_number: saved.quotation_number || saved.quote_number,
+                  quotation_number: saved.quotation_number || saved.quote_number
+                }
+              : q
+          )
+        );
+      }
+    }).catch(err => console.warn("Backend quotation persist notice:", err));
+  }
+
   return newQuote;
 }
 
 // Transition: Draft -> Quotation (Send Quote)
 export function sendQuotation(quoteId) {
+  if (browser && quoteId && quoteId.length > 20) {
+    quotationsApi.send(quoteId).catch(err => console.warn("Backend send quote notice:", err));
+  }
   quotationsStore.update(list =>
     list.map(q => (q.id === quoteId ? { ...q, status: "Quotation" } : q))
   );
@@ -723,6 +842,13 @@ export function sendQuotation(quoteId) {
 // Transition: Quotation -> Confirmed
 // Validates plan.min_quantity and converts into a linked subscription record!
 export function confirmQuotation(quoteId, performedBy = "Staff Operations") {
+  if (browser && quoteId && quoteId.length > 20) {
+    quotationsApi.confirm(quoteId).then(res => {
+      if (res.success && res.data) {
+        syncWithBackend();
+      }
+    }).catch(err => console.warn("Backend confirm quote notice:", err));
+  }
   let quote = null;
   quotationsStore.subscribe(val => {
     quote = val.find(q => q.id === quoteId);
@@ -874,6 +1000,9 @@ export function activateSubscription(subId, performedBy = "Staff Operations") {
 
 // Transition: Active -> Paused (Pause)
 export function pauseSubscription(subId, reason = "Requested by customer", performedBy = "Staff Operations") {
+  if (browser && subId && subId.length > 20) {
+    subscriptionsApi.pause(subId, reason).catch(err => console.warn("Backend pause notice:", err));
+  }
   let sub = null;
   subscriptionsStore.subscribe(val => {
     sub = val.find(s => s.id === subId);
@@ -911,6 +1040,9 @@ export function pauseSubscription(subId, reason = "Requested by customer", perfo
 
 // Transition: Paused -> Active (Resume)
 export function resumeSubscription(subId, performedBy = "Staff Operations") {
+  if (browser && subId && subId.length > 20) {
+    subscriptionsApi.resume(subId).catch(err => console.warn("Backend resume notice:", err));
+  }
   subscriptionsStore.update(list =>
     list.map(s => (s.id === subId ? { ...s, status: "Active", paused_at: null } : s))
   );
@@ -929,6 +1061,9 @@ export function resumeSubscription(subId, performedBy = "Staff Operations") {
 
 // Transition: Active -> Closed (Early Closure)
 export function closeSubscription(subId, reason = "Customer cancelled", performedBy = "Staff Operations") {
+  if (browser && subId && subId.length > 20) {
+    subscriptionsApi.close(subId, reason).catch(err => console.warn("Backend close notice:", err));
+  }
   let sub = null;
   subscriptionsStore.subscribe(val => {
     sub = val.find(s => s.id === subId);
@@ -969,6 +1104,9 @@ export function closeSubscription(subId, reason = "Customer cancelled", performe
 
 // Transition: Renewal (Create new subscription linked via renewed_from_subscription_id)
 export function renewSubscription(subId, performedBy = "Staff Operations") {
+  if (browser && subId && subId.length > 20) {
+    subscriptionsApi.renew(subId).then(() => syncWithBackend()).catch(err => console.warn("Backend renew notice:", err));
+  }
   let sub = null;
   subscriptionsStore.subscribe(val => {
     sub = val.find(s => s.id === subId);

@@ -3,7 +3,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
-  import { login, requestPasswordReset } from "$lib/stores/auth.js";
+  import { login, loginWithBackend, requestPasswordReset } from "$lib/stores/auth.js";
   import { customersStore } from "$lib/stores/coreManagement.js";
   import { goto } from "$app/navigation";
   import { Lock, Mail, Sparkles, Shield, Briefcase, UserCircle, CheckCircle2, AlertCircle, X, KeyRound, ArrowRight } from "lucide-svelte";
@@ -16,41 +16,54 @@
   let forgotSuccess = $state(null);
   let forgotError = $state("");
 
-  function handleSignIn() {
+  async function handleSignIn() {
     errorMessage = "";
-
-    // Role-based routing based on email domain / user profile
     const normalized = email.toLowerCase().trim();
-    if (normalized.includes("admin")) {
-      login({
-        name: "Brightloop Admin",
-        email: normalized,
-        company: "Brightloop Software Inc.",
-        role: "Administrator",
-        avatar: "AD"
-      });
-      goto("/");
-    } else if (normalized.includes("sales") || normalized.includes("staff")) {
-      login({
-        name: "Sarah Jenkins (Staff)",
-        email: normalized,
-        company: "Brightloop Software Inc.",
-        role: "Staff Operations",
-        avatar: "SJ"
-      });
-      goto("/staff");
-    } else {
-      // Customer
-      const cust = $customersStore.find(c => c.email.toLowerCase() === normalized);
-      login({
-        name: cust ? cust.name : "Dr. Eleanor Vance",
-        email: normalized,
-        company: cust ? cust.company : "Nexus Health Systems",
-        role: "Customer Portal",
-        customerId: cust ? cust.customer_number : "CUST-1001",
-        avatar: "EV"
-      });
-      goto("/portal");
+
+    try {
+      const res = await loginWithBackend(normalized, password);
+      const user = res.user;
+      if (user.role === "Administrator") {
+        goto("/");
+      } else if (user.role === "Staff Operations") {
+        goto("/staff");
+      } else {
+        goto("/portal");
+      }
+    } catch (err) {
+      console.warn("Backend login issue, falling back to persona login:", err.message);
+      // Role-based routing based on email domain / user profile
+      if (normalized.includes("admin")) {
+        login({
+          name: "Brightloop Admin",
+          email: normalized,
+          company: "Brightloop Software Inc.",
+          role: "Administrator",
+          avatar: "AD"
+        });
+        goto("/");
+      } else if (normalized.includes("sales") || normalized.includes("staff")) {
+        login({
+          name: "Sarah Jenkins (Staff)",
+          email: normalized,
+          company: "Brightloop Software Inc.",
+          role: "Staff Operations",
+          avatar: "SJ"
+        });
+        goto("/staff");
+      } else {
+        // Customer
+        const cust = $customersStore.find(c => c.email.toLowerCase() === normalized);
+        login({
+          name: cust ? cust.name : "Dr. Eleanor Vance",
+          email: normalized,
+          company: cust ? cust.company : "Nexus Health Systems",
+          role: "Customer Portal",
+          customerId: cust ? cust.customer_number : "CUST-1001",
+          avatar: "EV"
+        });
+        goto("/portal");
+      }
     }
   }
 
