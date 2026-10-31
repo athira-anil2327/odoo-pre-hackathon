@@ -1,6 +1,7 @@
 import { writable, derived } from "svelte/store";
 import { browser } from "$app/environment";
 import { subscriptionsStore, customersStore, calculateNextBillingDate, addDays, logSubscriptionEvent } from "$lib/stores/coreManagement.js";
+import { invoicesApi, paymentsApi } from "$lib/api.js";
 
 // Helper to load or persist state in localStorage
 function loadStore(key, fallback) {
@@ -266,6 +267,67 @@ if (browser) {
   paymentsStore.subscribe(val => persistStore("payments", val));
 }
 
+export async function syncInvoicesWithBackend() {
+  if (!browser) return;
+  try {
+    const res = await invoicesApi.getAll();
+    if (res.success && Array.isArray(res.data)) {
+      const dbInvoices = res.data.map(i => ({
+        id: i.id,
+        invoice_number: i.invoice_number,
+        subscription_id: i.subscription_id,
+        subscription_number: i.subscription_number,
+        customer_id: i.customer_id,
+        customer_name: i.customer_company || i.customer_name,
+        contact_name: i.customer_name,
+        contact_email: i.customer_email,
+        billing_address: i.billing_address || "",
+        tax_id: i.tax_id || "GST-29AABCU9603R1ZM",
+        billing_period_start: i.billing_period_start ? String(i.billing_period_start).slice(0, 10) : "",
+        billing_period_end: i.billing_period_end ? String(i.billing_period_end).slice(0, 10) : "",
+        invoice_date: i.invoice_date ? String(i.invoice_date).slice(0, 10) : "",
+        due_date: i.due_date ? String(i.due_date).slice(0, 10) : "",
+        currency: i.currency || "INR",
+        subtotal: Number(i.subtotal) || 0,
+        tax_total: Number(i.tax_total) || 0,
+        discount_total: Number(i.discount_total) || 0,
+        total_amount: Number(i.total_amount) || 0,
+        paid_amount: Number(i.paid_amount) || 0,
+        outstanding_amount: Number(i.outstanding_amount) || 0,
+        status: i.status || "confirmed",
+        sent_at: i.sent_at || "",
+        notes: i.notes || "",
+        lines: i.lines || []
+      }));
+
+      invoicesStore.update(currentList => {
+        const merged = [...dbInvoices];
+        for (const local of currentList) {
+          if (!merged.some(m => m.id === local.id || m.invoice_number === local.invoice_number)) {
+            merged.push(local);
+          }
+        }
+        return merged;
+      });
+    }
+
+    const payRes = await paymentsApi.getAll();
+    if (payRes.success && Array.isArray(payRes.data)) {
+      paymentsStore.update(currentPayments => {
+        const merged = [...payRes.data];
+        for (const local of currentPayments) {
+          if (!merged.some(p => p.id === local.id || p.payment_number === local.payment_number)) {
+            merged.push(local);
+          }
+        }
+        return merged;
+      });
+    }
+  } catch (err) {
+    console.warn("Could not sync invoices with backend:", err.message);
+  }
+}
+
 // -----------------------------------------------------------------------------
 // DYNAMIC KPI COMPUTATIONS
 // Meets critical requirements:
@@ -446,6 +508,28 @@ export function generateInvoiceForSubscription(subscriptionId, customPeriodStart
     `Invoice ${invoiceNumber} issued for period ${periodStart} to ${periodEnd}. Next billing rescheduled to ${nextBilling}.`
   );
 
+  // Asynchronously persist to backend PostgreSQL database
+  invoicesApi.create({
+    subscription_id: sub.id,
+    customer_id: sub.customer_id,
+    billing_period_start: periodStart,
+    billing_period_end: periodEnd,
+    due_date: dueDate,
+    currency: "INR",
+    lines: lines.map(l => ({
+      product_id: l.product_id,
+      period_start: l.period_start,
+      period_end: l.period_end,
+      quantity: l.quantity,
+      unit_price: l.unit_price,
+      tax_rate_snapshot: l.tax_rate_snapshot,
+      discount_amount: l.discount_amount
+    })),
+    notes: newInvoice.notes
+  }).then(() => syncInvoicesWithBackend()).catch(err => {
+    console.warn("Background backend invoice creation notice:", err.message);
+  });
+
   return newInvoice;
 }
 
@@ -528,6 +612,17 @@ export function recordPayment({ invoiceId, amount, paymentMethod = "bank_transfe
   // Add payment
   paymentsStore.update(list => [newPayment, ...list]);
 
+  // Asynchronously persist to backend PostgreSQL database
+  paymentsApi.record({
+    invoice_id: inv.id,
+    amount: payAmt,
+    payment_method: paymentMethod,
+    reference_number: referenceNumber,
+    note: note
+  }).then(() => syncInvoicesWithBackend()).catch(err => {
+    console.warn("Background backend payment recording notice:", err.message);
+  });
+
   return newPayment;
 }
 
@@ -538,6 +633,7 @@ export function confirmInvoice(invoiceId) {
   invoicesStore.update(list =>
     list.map(i => (i.id === invoiceId && i.status === "draft" ? { ...i, status: "confirmed" } : i))
   );
+  invoicesApi.confirm(invoiceId).catch(err => console.warn("Backend confirm notice:", err.message));
   return true;
 }
 
@@ -565,6 +661,7 @@ export function cancelInvoice(invoiceId, reason = "Cancelled by administrator") 
       return i;
     })
   );
+  invoicesApi.cancel(invoiceId, reason).catch(err => console.warn("Backend cancel notice:", err.message));
   return true;
 }
 

@@ -13,7 +13,8 @@
     recordPayment,
     confirmInvoice,
     cancelInvoice,
-    sendInvoice
+    sendInvoice,
+    syncInvoicesWithBackend
   } from "$lib/stores/invoices.js";
   import {
     subscriptionsStore,
@@ -74,6 +75,7 @@
     } else if (tabParam === "all" || tabParam === "invoices") {
       activeTab = "all";
     }
+    syncInvoicesWithBackend();
   });
 
   // Dedicated Detail View State
