@@ -16,103 +16,140 @@
     Mail,
     Send
   } from "lucide-svelte";
+  import {
+    customersStore,
+    quotationsStore,
+    subscriptionsStore,
+    plansStore
+  } from "$lib/stores/coreManagement.js";
+  import { invoicesStore } from "$lib/stores/invoices.js";
 
-  const staffMetrics = [
+  function formatCurrency(val) {
+    const num = parseFloat(val) || 0;
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 2
+    }).format(num);
+  }
+
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  function getCustomerName(customerId) {
+    const c = $customersStore.find(cust => cust.id === customerId);
+    return c ? (c.company || c.name) : "Customer Account";
+  }
+
+  function getPlanName(planId) {
+    const p = $plansStore.find(plan => plan.id === planId);
+    return p ? p.name : "Subscription Plan";
+  }
+
+  // Live Metrics
+  const openQuotes = $derived(
+    $quotationsStore.filter(q => q.status === "draft" || q.status === "quotation")
+  );
+  const openQuotesValue = $derived(
+    openQuotes.reduce((acc, q) => acc + (Number(q.total_amount) || 0), 0)
+  );
+
+  const overdueInvoices = $derived(
+    $invoicesStore.filter(i => Number(i.outstanding_amount) > 0 && i.due_date && i.due_date < todayStr && i.status !== "cancelled")
+  );
+  const overdueValue = $derived(
+    overdueInvoices.reduce((acc, i) => acc + (Number(i.outstanding_amount) || 0), 0)
+  );
+
+  const activeSubs = $derived(
+    $subscriptionsStore.filter(s => s.status?.toLowerCase() === "active")
+  );
+  const activeSubsValue = $derived(
+    activeSubs.reduce((acc, s) => acc + (Number(s.total_amount) || 0), 0)
+  );
+
+  const staffMetrics = $derived([
     {
       title: "My Assigned Accounts",
-      value: "24",
-      sub: "3 added this month",
+      value: String($customersStore.length),
+      sub: `${activeSubs.length} active subscriptions`,
       icon: Users,
       color: "text-blue-600",
       bg: "bg-blue-50"
     },
     {
       title: "Open Quotations",
-      value: "$38,200.00",
-      sub: "6 proposals in review",
+      value: formatCurrency(openQuotesValue),
+      sub: `${openQuotes.length} proposals pending`,
       icon: FileText,
       color: "text-[#183f42]",
       bg: "bg-[#e6f4f2]"
     },
     {
       title: "Receivables Follow-up",
-      value: "$4,250.00",
-      sub: "4 overdue accounts",
+      value: formatCurrency(overdueValue),
+      sub: `${overdueInvoices.length} overdue invoices`,
       icon: Receipt,
       color: "text-amber-600",
       bg: "bg-amber-50"
     },
     {
-      title: "Renewals This Week",
-      value: "3 Accounts",
-      sub: "$18,400.00 value",
+      title: "Active Contract MRR",
+      value: formatCurrency(activeSubsValue),
+      sub: `${activeSubs.length} recurring accounts`,
       icon: Clock,
       color: "text-emerald-600",
       bg: "bg-emerald-50"
     }
-  ];
+  ]);
 
   let tasks = $state([
     {
       id: 1,
-      title: "Follow up with CloudSphere on Growth Plan renewal",
-      company: "CloudSphere AI",
+      title: "Follow up with FinGuard Global Security on overdue invoice",
+      company: "FinGuard Global Security",
       due: "Today, 3:00 PM",
       priority: "High",
       done: false
     },
     {
       id: 2,
-      title: "Send updated quotation QT-2026-088 with 10% volume discount",
-      company: "BioSynth Labs",
+      title: "Review sent quotation for Greenleaf Retailers Inc.",
+      company: "Greenleaf Retailers Inc.",
       due: "Today, 5:00 PM",
       priority: "Medium",
       done: false
     },
     {
       id: 3,
-      title: "Confirm payment receipt of $1,850.00 for INV-2026-003",
-      company: "Starlight Media",
+      title: "Verify active onboarding for Starlight Media Group",
+      company: "Starlight Media Group",
       due: "Tomorrow, 11:00 AM",
       priority: "Low",
       done: true
     }
   ]);
 
-  const recentQuotations = [
-    {
-      id: "QT-2026-088",
-      customer: "CloudSphere AI",
-      plan: "Enterprise Suite",
-      amount: "$12,400.00",
-      status: "Sent",
-      statusColor: "bg-indigo-50 text-indigo-700 border-indigo-200"
-    },
-    {
-      id: "QT-2026-089",
-      customer: "BioSynth Labs",
-      plan: "Growth Cloud",
-      amount: "$6,800.00",
-      status: "In Review",
-      statusColor: "bg-amber-50 text-amber-700 border-amber-200"
-    },
-    {
-      id: "QT-2026-090",
-      customer: "Apex Global Tech",
-      plan: "Seat Expansion (x10)",
-      amount: "$4,500.00",
-      status: "Draft",
-      statusColor: "bg-zinc-100 text-zinc-700 border-zinc-200"
-    },
-    {
-      id: "QT-2026-091",
-      customer: "Acme Logistics",
-      plan: "Standard Cloud",
-      amount: "$14,500.00",
-      status: "Accepted",
-      statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200"
-    }
-  ];
+  const recentQuotations = $derived(
+    $quotationsStore.slice(0, 5).map(q => {
+      const isConfirmed = q.status === "confirmed";
+      const isQuotation = q.status === "quotation";
+      const isDraft = q.status === "draft";
+
+      let statusColor = "bg-zinc-100 text-zinc-700 border-zinc-200";
+      if (isConfirmed) statusColor = "bg-emerald-50 text-emerald-700 border-emerald-200";
+      else if (isQuotation) statusColor = "bg-amber-50 text-amber-700 border-amber-200";
+      else if (isDraft) statusColor = "bg-indigo-50 text-indigo-700 border-indigo-200";
+
+      return {
+        id: q.quotation_number || q.quote_number || q.id,
+        customer: getCustomerName(q.customer_id),
+        plan: getPlanName(q.plan_id),
+        amount: formatCurrency(q.total_amount),
+        status: (q.status || "draft").toUpperCase(),
+        statusColor
+      };
+    })
+  );
 
   function toggleTask(id) {
     tasks = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
@@ -125,13 +162,13 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <div class="flex items-center gap-2">
-          <h2 class="text-xl font-bold text-zinc-900 tracking-tight">Staff Briefing</h2>
+          <h2 class="text-xl font-bold text-zinc-900 tracking-tight">Staff Operations Briefing</h2>
           <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60 uppercase">
-            Sales & Support
+            Live Database Pacing
           </span>
         </div>
         <p class="text-xs text-zinc-500 mt-1">
-          Monitor your assigned portfolio, track quotation approvals, and follow up on customer receivables.
+          Monitor your customer portfolio, track commercial proposals, and resolve receivables.
         </p>
       </div>
 
@@ -211,7 +248,7 @@
         <div class="p-4 border-b border-zinc-100 flex items-center justify-between">
           <div>
             <h3 class="text-xs font-bold text-zinc-900">Assigned Quotations & Proposals</h3>
-            <p class="text-[11px] text-zinc-400">Proposals currently under review by clients</p>
+            <p class="text-[11px] text-zinc-400">Proposals currently under review from database</p>
           </div>
           <a href="/staff/quotations" class="text-xs font-semibold text-[#183f42] hover:text-[#143e42] flex items-center gap-1">
             View All <ArrowUpRight class="w-3.5 h-3.5" />
@@ -230,29 +267,34 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-zinc-100">
-              {#each recentQuotations as quote}
-                <tr class="hover:bg-zinc-50/70 transition-colors">
-                  <td class="py-3 px-4 font-mono font-medium text-zinc-900">{quote.id}</td>
-                  <td class="py-3 px-4 font-semibold text-zinc-800">{quote.customer}</td>
-                  <td class="py-3 px-4 text-zinc-500">{quote.plan}</td>
-                  <td class="py-3 px-4 text-right font-medium text-zinc-900">{quote.amount}</td>
-                  <td class="py-3 px-4">
-                    <span class={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${quote.statusColor}`}>
-                      {quote.status}
-                    </span>
-                  </td>
-                  <td class="py-3 px-4 text-right">
-                    <div class="flex items-center justify-end gap-1">
-                      <button class="p-1 rounded text-zinc-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Send Email">
-                        <Mail class="w-3.5 h-3.5" />
-                      </button>
-                      <button class="p-1 rounded text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors" title="Log Call">
-                        <PhoneCall class="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+              {#if recentQuotations.length === 0}
+                <tr>
+                  <td colspan="6" class="py-8 text-center text-zinc-400">
+                    No proposals found in database.
                   </td>
                 </tr>
-              {/each}
+              {:else}
+                {#each recentQuotations as quote}
+                  <tr class="hover:bg-zinc-50/70 transition-colors">
+                    <td class="py-3 px-4 font-mono font-medium text-zinc-900">{quote.id}</td>
+                    <td class="py-3 px-4 font-semibold text-zinc-800">{quote.customer}</td>
+                    <td class="py-3 px-4 text-zinc-500">{quote.plan}</td>
+                    <td class="py-3 px-4 text-right font-medium text-zinc-900">{quote.amount}</td>
+                    <td class="py-3 px-4">
+                      <span class={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${quote.statusColor}`}>
+                        {quote.status}
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                      <div class="flex items-center justify-end gap-1">
+                        <a href="/staff/quotations" class="p-1 rounded text-zinc-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="View Proposal">
+                          <FileText class="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                {/each}
+              {/if}
             </tbody>
           </table>
         </div>
@@ -260,23 +302,25 @@
     </div>
 
     <!-- Receivables Collection Notice Banner -->
-    <div class="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200/70 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-          <AlertCircle class="w-4 h-4" />
+    {#if overdueInvoices.length > 0}
+      <div class="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200/70 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+            <AlertCircle class="w-4 h-4" />
+          </div>
+          <div>
+            <h4 class="text-xs font-bold text-zinc-900">{overdueInvoices.length} Invoices Awaiting Collection Follow-up</h4>
+            <p class="text-[11px] text-zinc-500 mt-0.5">
+              Total overdue balance: {formatCurrency(overdueValue)}. Reconcile payments or follow up with account contacts.
+            </p>
+          </div>
         </div>
-        <div>
-          <h4 class="text-xs font-bold text-zinc-900">4 Invoices Awaiting Collection Follow-up</h4>
-          <p class="text-[11px] text-zinc-500 mt-0.5">
-            CloudSphere AI and BioSynth Labs have overdue receivables over 15 days. Send payment reminders or log offline receipts.
-          </p>
-        </div>
+        <a href="/staff/invoices">
+          <Button size="sm" variant="outline" class="text-xs border-amber-300 text-amber-800 bg-white hover:bg-amber-50">
+            Review Invoices
+          </Button>
+        </a>
       </div>
-      <a href="/staff/invoices">
-        <Button size="sm" variant="outline" class="text-xs border-amber-300 text-amber-800 bg-white hover:bg-amber-50">
-          Review Invoices
-        </Button>
-      </a>
-    </div>
+    {/if}
   </div>
 </AppShell>

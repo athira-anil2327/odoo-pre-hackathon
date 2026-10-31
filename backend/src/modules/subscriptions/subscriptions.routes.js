@@ -7,12 +7,14 @@ import {
   resumeSubscription,
   closeSubscription,
   renewSubscription,
-  getSubscriptionEvents
+  getSubscriptionEvents,
+  getAllSubscriptionEvents
 } from "./subscriptions.controller.js";
 
 const router = Router();
 
 router.get("/", getSubscriptions);
+router.get("/events/all", getAllSubscriptionEvents);
 router.get("/:id", getSubscriptionById);
 router.post("/", createSubscription);
 router.post("/:id/pause", pauseSubscription);

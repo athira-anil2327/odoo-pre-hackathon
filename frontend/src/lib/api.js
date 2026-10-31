@@ -110,7 +110,8 @@ export const subscriptionsApi = {
   resume: (id) => apiFetch(`/subscriptions/${id}/resume`, { method: "POST" }),
   close: (id, reason) => apiFetch(`/subscriptions/${id}/close`, { method: "POST", body: JSON.stringify({ reason }) }),
   renew: (id) => apiFetch(`/subscriptions/${id}/renew`, { method: "POST" }),
-  getEvents: (id) => apiFetch(`/subscriptions/${id}/events`)
+  getEvents: (id) => apiFetch(`/subscriptions/${id}/events`),
+  getAllEvents: () => apiFetch("/subscriptions/events/all")
 };
 
 export const invoicesApi = {

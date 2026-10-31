@@ -1,3 +1,4 @@
+import { syncInvoicesWithBackend } from "./invoices.js";
 import { writable, derived } from "svelte/store";
 import { browser } from "$app/environment";
 import {
@@ -8,480 +9,25 @@ import {
   subscriptionsApi
 } from "$lib/api.js";
 
-// Initial seed data aligned with Brightloop schema & hackathon scenarios
-const initialProducts = [
-  {
-    id: "PROD-1001",
-    name: "Business ERP Suite",
-    type: "software",
-    sales_price: 499.00,
-    cost_price: 150.00,
-    notes: "Main business software suite with CRM, billing, and inventory modules",
-    is_active: true,
-    variants: [
-      {
-        id: "VAR-1001-STD",
-        attribute_name: "Brand",
-        attribute_value: "Standard Edition",
-        price_extra: 0.00,
-        sku: "ERP-STD"
-      },
-      {
-        id: "VAR-1001-ODOO",
-        attribute_name: "Brand",
-        attribute_value: "Odoo Enterprise Edition",
-        price_extra: 560.00,
-        sku: "ERP-ODOO-ENT"
-      }
-    ]
-  },
-  {
-    id: "PROD-1002",
-    name: "Automated Invoicing Addon",
-    type: "addon",
-    sales_price: 99.00,
-    cost_price: 20.00,
-    notes: "Add-on module to automatically generate, calculate taxes, and email recurring invoices",
-    is_active: true,
-    variants: []
-  },
-  {
-    id: "PROD-1003",
-    name: "Priority 24/7 SLA Support",
-    type: "service",
-    sales_price: 150.00,
-    cost_price: 50.00,
-    notes: "Dedicated SLA support channel with sub-hour guaranteed turnaround",
-    is_active: true,
-    variants: []
-  }
-];
-
-const initialPlans = [
-  {
-    id: "PLAN-2001",
-    name: "Starter Monthly",
-    billing_frequency: "monthly",
-    price: 199.00,
-    min_quantity: 1,
-    start_date: "2026-01-01",
-    end_date: "2027-12-31",
-    auto_close_on_end: false,
-    allow_early_close: true,
-    allow_pause: true,
-    allow_renewal: true,
-    is_active: true,
-    included_products: ["PROD-1002"]
-  },
-  {
-    id: "PLAN-2002",
-    name: "Growth Cloud Monthly",
-    billing_frequency: "monthly",
-    price: 499.00,
-    min_quantity: 1,
-    start_date: "2026-01-01",
-    end_date: "2027-12-31",
-    auto_close_on_end: false,
-    allow_early_close: true,
-    allow_pause: true,
-    allow_renewal: true,
-    is_active: true,
-    included_products: ["PROD-1001", "PROD-1002"]
-  },
-  {
-    id: "PLAN-2003",
-    name: "Enterprise Annual Contract",
-    billing_frequency: "yearly",
-    price: 4990.00,
-    min_quantity: 5,
-    start_date: "2026-01-01",
-    end_date: "2027-12-31",
-    auto_close_on_end: true,
-    allow_early_close: true,
-    allow_pause: false, // Explicitly locked: Pause not allowed on locked yearly contract
-    allow_renewal: true,
-    is_active: true,
-    included_products: ["PROD-1001", "PROD-1002", "PROD-1003"]
-  }
-];
-
-const initialCustomers = [
-  {
-    id: "CUST-1001",
-    customer_number: "CUST-1001",
-    name: "Dr. Eleanor Vance",
-    email: "eleanor.vance@nexushealth.org",
-    phone: "+1 (555) 234-8901",
-    company: "Nexus Health Systems",
-    billing_address: "742 Evergreen Terrace, Springfield, OR",
-    user_id: "USR-003",
-    status: "Active"
-  },
-  {
-    id: "CUST-1002",
-    customer_number: "CUST-1002",
-    name: "Marcus Brody (Apex)",
-    email: "billing@apexlogistics.com",
-    phone: "+1 (555) 887-2190",
-    company: "Apex Logistics Corp",
-    billing_address: "1200 Market Street, Suite 400, Philadelphia, PA",
-    user_id: "USR-004",
-    status: "Active"
-  },
-  {
-    id: "CUST-1003",
-    customer_number: "CUST-1003",
-    name: "Greenleaf Retailers",
-    email: "contact@greenleaf.shop",
-    phone: "+1 (555) 431-7722",
-    company: "Greenleaf Retailers Inc.",
-    billing_address: "55 Broadway Ave, New York, NY",
-    user_id: null,
-    status: "Active"
-  }
-];
-
-const initialTemplates = [
-  {
-    id: "TMPL-3001",
-    name: "Growth Cloud Starter Template",
-    plan_id: "PLAN-2002",
-    validity_days: 30,
-    description: "Standard bundle for growing businesses with Odoo Enterprise ERP suite and Automated Invoicing Addon",
-    lines: [
-      {
-        product_id: "PROD-1001",
-        variant_id: "VAR-1001-ODOO",
-        quantity: 1,
-        unit_price: 499.00,
-        variant_price_extra: 560.00
-      },
-      {
-        product_id: "PROD-1002",
-        variant_id: null,
-        quantity: 1,
-        unit_price: 99.00,
-        variant_price_extra: 0.00
-      }
-    ]
-  },
-  {
-    id: "TMPL-3002",
-    name: "Enterprise Multi-Seat Annual Template",
-    plan_id: "PLAN-2003",
-    validity_days: 45,
-    description: "Comprehensive locked annual enterprise deal with 5-seat minimum and 24/7 priority support",
-    lines: [
-      {
-        product_id: "PROD-1001",
-        variant_id: "VAR-1001-ODOO",
-        quantity: 5,
-        unit_price: 499.00,
-        variant_price_extra: 560.00
-      },
-      {
-        product_id: "PROD-1003",
-        variant_id: null,
-        quantity: 5,
-        unit_price: 150.00,
-        variant_price_extra: 0.00
-      }
-    ]
-  }
-];
-
-const initialQuotations = [
-  {
-    id: "QUO-2026-001",
-    quote_number: "QUO-2026-001",
-    customer_id: "CUST-1001",
-    plan_id: "PLAN-2002",
-    template_id: "TMPL-3001",
-    issue_date: "2026-10-15",
-    valid_until: "2026-11-14",
-    status: "Confirmed",
-    subtotal: 1158.00,
-    tax_rate: 18.00,
-    tax_amount: 208.44,
-    discount_amount: 0.00,
-    total_amount: 1366.44,
-    converted_subscription_id: "SUB-2026-0001",
-    lines: [
-      {
-        id: "QL-1",
-        product_id: "PROD-1001",
-        product_name: "Business ERP Suite",
-        variant_id: "VAR-1001-ODOO",
-        variant_name: "Odoo Enterprise Edition (+560.00)",
-        quantity: 1,
-        unit_price: 499.00,
-        price_extra: 560.00,
-        effective_unit_price: 1059.00,
-        line_subtotal: 1059.00,
-        tax_amount: 190.62,
-        line_total: 1249.62
-      },
-      {
-        id: "QL-2",
-        product_id: "PROD-1002",
-        product_name: "Automated Invoicing Addon",
-        variant_id: null,
-        variant_name: "None",
-        quantity: 1,
-        unit_price: 99.00,
-        price_extra: 0.00,
-        effective_unit_price: 99.00,
-        line_subtotal: 99.00,
-        tax_amount: 17.82,
-        line_total: 116.82
-      }
-    ]
-  },
-  {
-    id: "QUO-2026-002",
-    quote_number: "QUO-2026-002",
-    customer_id: "CUST-1002",
-    plan_id: "PLAN-2001",
-    template_id: null,
-    issue_date: "2026-10-22",
-    valid_until: "2026-11-21",
-    status: "Quotation",
-    subtotal: 199.00,
-    tax_rate: 18.00,
-    tax_amount: 35.82,
-    discount_amount: 0.00,
-    total_amount: 234.82,
-    converted_subscription_id: null,
-    lines: [
-      {
-        id: "QL-3",
-        product_id: "PROD-1001",
-        product_name: "Business ERP Suite",
-        variant_id: "VAR-1001-STD",
-        variant_name: "Standard Edition",
-        quantity: 1,
-        unit_price: 199.00,
-        price_extra: 0.00,
-        effective_unit_price: 199.00,
-        line_subtotal: 199.00,
-        tax_amount: 35.82,
-        line_total: 234.82
-      }
-    ]
-  },
-  {
-    id: "QUO-2026-003",
-    quote_number: "QUO-2026-003",
-    customer_id: "CUST-1003",
-    plan_id: "PLAN-2003",
-    template_id: "TMPL-3002",
-    issue_date: "2026-10-28",
-    valid_until: "2026-12-12",
-    status: "Draft",
-    subtotal: 6045.00,
-    tax_rate: 18.00,
-    tax_amount: 1088.10,
-    discount_amount: 0.00,
-    total_amount: 7133.10,
-    converted_subscription_id: null,
-    lines: [
-      {
-        id: "QL-4",
-        product_id: "PROD-1001",
-        product_name: "Business ERP Suite",
-        variant_id: "VAR-1001-ODOO",
-        variant_name: "Odoo Enterprise Edition (+560.00)",
-        quantity: 5,
-        unit_price: 499.00,
-        price_extra: 560.00,
-        effective_unit_price: 1059.00,
-        line_subtotal: 5295.00,
-        tax_amount: 953.10,
-        line_total: 6248.10
-      },
-      {
-        id: "QL-5",
-        product_id: "PROD-1003",
-        product_name: "Priority 24/7 SLA Support",
-        variant_id: null,
-        variant_name: "None",
-        quantity: 5,
-        unit_price: 150.00,
-        price_extra: 0.00,
-        effective_unit_price: 150.00,
-        line_subtotal: 750.00,
-        tax_amount: 135.00,
-        line_total: 885.00
-      }
-    ]
-  }
-];
-
-const initialSubscriptions = [
-  {
-    id: "SUB-2026-0001",
-    subscription_number: "SUB-2026-0001",
-    customer_id: "CUST-1001",
-    plan_id: "PLAN-2002",
-    plan_name: "Growth Cloud Monthly",
-    billing_frequency: "monthly",
-    status: "Active",
-    start_date: "2026-10-01",
-    expiry_date: "2027-09-30",
-    next_billing_date: "2026-11-01",
-    payment_terms: "Immediate",
-    subtotal: 1059.00,
-    tax_amount: 190.62,
-    discount_amount: 0.00,
-    total_amount: 1249.62,
-    paused_at: null,
-    closed_at: null,
-    renewed_from_subscription_id: null,
-    lines: [
-      {
-        product_id: "PROD-1001",
-        product_name: "Business ERP Suite",
-        variant_id: "VAR-1001-ODOO",
-        variant_name: "Odoo Enterprise Edition (+560.00)",
-        quantity: 1,
-        unit_price: 1059.00,
-        line_total: 1249.62
-      }
-    ]
-  },
-  {
-    id: "SUB-2026-0002",
-    subscription_number: "SUB-2026-0002",
-    customer_id: "CUST-1002",
-    plan_id: "PLAN-2001",
-    plan_name: "Starter Monthly",
-    billing_frequency: "monthly",
-    status: "Active",
-    start_date: "2026-09-15",
-    expiry_date: "2027-09-15",
-    next_billing_date: "2026-11-15",
-    payment_terms: "Net 30",
-    subtotal: 199.00,
-    tax_amount: 35.82,
-    discount_amount: 0.00,
-    total_amount: 234.82,
-    paused_at: null,
-    closed_at: null,
-    renewed_from_subscription_id: null,
-    lines: [
-      {
-        product_id: "PROD-1001",
-        product_name: "Business ERP Suite",
-        variant_id: "VAR-1001-STD",
-        variant_name: "Standard Edition",
-        quantity: 1,
-        unit_price: 199.00,
-        line_total: 234.82
-      }
-    ]
-  },
-  {
-    id: "SUB-2026-0003",
-    subscription_number: "SUB-2026-0003",
-    customer_id: "CUST-1003",
-    plan_id: "PLAN-2003",
-    plan_name: "Enterprise Annual Contract",
-    billing_frequency: "yearly",
-    status: "Confirmed",
-    start_date: "2026-10-31",
-    expiry_date: "2027-10-31",
-    next_billing_date: null, // Set upon activation
-    payment_terms: "Immediate",
-    subtotal: 6045.00,
-    tax_amount: 1088.10,
-    discount_amount: 0.00,
-    total_amount: 7133.10,
-    paused_at: null,
-    closed_at: null,
-    renewed_from_subscription_id: null,
-    lines: [
-      {
-        product_id: "PROD-1001",
-        product_name: "Business ERP Suite",
-        variant_id: "VAR-1001-ODOO",
-        variant_name: "Odoo Enterprise Edition (+560.00)",
-        quantity: 5,
-        unit_price: 1059.00,
-        line_total: 6248.10
-      },
-      {
-        product_id: "PROD-1003",
-        product_name: "Priority 24/7 SLA Support",
-        variant_id: null,
-        variant_name: "None",
-        quantity: 5,
-        unit_price: 150.00,
-        line_total: 885.00
-      }
-    ]
-  }
-];
-
-const initialEvents = [
-  {
-    id: "EVT-001",
-    subscription_id: "SUB-2026-0001",
-    from_status: "Draft",
-    to_status: "Quotation",
-    event_type: "sent",
-    performed_by: "Sales Representative",
-    reason: "Proposal dispatched to customer",
-    timestamp: "2026-10-15 10:30:00"
-  },
-  {
-    id: "EVT-002",
-    subscription_id: "SUB-2026-0001",
-    from_status: "Quotation",
-    to_status: "Confirmed",
-    event_type: "confirmed",
-    performed_by: "Dr. Eleanor Vance",
-    reason: "Quotation accepted & min_quantity verified",
-    timestamp: "2026-10-18 14:15:00"
-  },
-  {
-    id: "EVT-003",
-    subscription_id: "SUB-2026-0001",
-    from_status: "Confirmed",
-    to_status: "Active",
-    event_type: "activated",
-    performed_by: "Internal Billing System",
-    reason: "Contract activated, next_billing_date set to 2026-11-01",
-    timestamp: "2026-10-19 09:00:00"
-  },
-  {
-    id: "EVT-004",
-    subscription_id: "SUB-2026-0002",
-    from_status: "Confirmed",
-    to_status: "Active",
-    event_type: "activated",
-    performed_by: "Internal Billing System",
-    reason: "Contract activated with monthly frequency",
-    timestamp: "2026-09-15 10:00:00"
-  },
-  {
-    id: "EVT-005",
-    subscription_id: "SUB-2026-0003",
-    from_status: "Quotation",
-    to_status: "Confirmed",
-    event_type: "confirmed",
-    performed_by: "Brightloop Staff",
-    reason: "Verified enterprise min_quantity of 5 seats",
-    timestamp: "2026-10-31 11:00:00"
-  }
-];
-
-// Helper to load or persist state in localStorage
+// Helper to load or persist state in localStorage with stale mock protection
 function loadStore(key, fallback) {
   if (browser) {
     const saved = localStorage.getItem(`bl_${key}`);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.some(item => 
+          item?.id === "PROD-1001" || 
+          item?.id === "PLAN-2001" || 
+          item?.id === "CUST-1001" || 
+          item?.id === "QUO-2026-001" || 
+          item?.id === "SUB-2026-0001" ||
+          item?.customer_number === "CUST-1001"
+        )) {
+          localStorage.removeItem(`bl_${key}`);
+          return fallback;
+        }
+        return parsed;
       } catch (e) {
         console.error(`Error parsing store ${key}`, e);
       }
@@ -496,14 +42,14 @@ function persistStore(key, value) {
   }
 }
 
-// Create stores
-export const productsStore = writable(loadStore("products", initialProducts));
-export const plansStore = writable(loadStore("plans", initialPlans));
-export const customersStore = writable(loadStore("customers", initialCustomers));
-export const templatesStore = writable(loadStore("templates", initialTemplates));
-export const quotationsStore = writable(loadStore("quotations", initialQuotations));
-export const subscriptionsStore = writable(loadStore("subscriptions", initialSubscriptions));
-export const eventsStore = writable(loadStore("events", initialEvents));
+// Stores initialized with empty arrays; populated from live PostgreSQL database
+export const productsStore = writable(loadStore("products", []));
+export const plansStore = writable(loadStore("plans", []));
+export const customersStore = writable(loadStore("customers", []));
+export const templatesStore = writable(loadStore("templates", []));
+export const quotationsStore = writable(loadStore("quotations", []));
+export const subscriptionsStore = writable(loadStore("subscriptions", []));
+export const eventsStore = writable(loadStore("events", []));
 
 // Auto-persist on changes
 if (browser) {
@@ -516,29 +62,30 @@ if (browser) {
   eventsStore.subscribe(val => persistStore("events", val));
 }
 
-// Hydrate live data from backend PostgreSQL database with non-destructive merge
+// Hydrate live data from backend PostgreSQL database
 export async function syncWithBackend() {
   if (!browser) return;
   try {
-    const [pRes, plRes, cRes, tRes, qRes, sRes] = await Promise.allSettled([
+    const [pRes, plRes, cRes, tRes, qRes, sRes, evRes] = await Promise.allSettled([
       productsApi.getAll(),
       plansApi.getAll(),
       customersApi.getAll(),
       quotationsApi.getTemplates(),
       quotationsApi.getAll(),
-      subscriptionsApi.getAll()
+      subscriptionsApi.getAll(),
+      subscriptionsApi.getAllEvents ? subscriptionsApi.getAllEvents() : Promise.resolve({ success: false })
     ]);
 
-    if (pRes.status === "fulfilled" && pRes.value.success && Array.isArray(pRes.value.data) && pRes.value.data.length > 0) {
+    if (pRes.status === "fulfilled" && pRes.value.success && Array.isArray(pRes.value.data)) {
       productsStore.set(pRes.value.data);
     }
-    if (plRes.status === "fulfilled" && plRes.value.success && Array.isArray(plRes.value.data) && plRes.value.data.length > 0) {
+    if (plRes.status === "fulfilled" && plRes.value.success && Array.isArray(plRes.value.data)) {
       plansStore.set(plRes.value.data);
     }
-    if (cRes.status === "fulfilled" && cRes.value.success && Array.isArray(cRes.value.data) && cRes.value.data.length > 0) {
+    if (cRes.status === "fulfilled" && cRes.value.success && Array.isArray(cRes.value.data)) {
       customersStore.set(cRes.value.data);
     }
-    if (tRes.status === "fulfilled" && tRes.value.success && Array.isArray(tRes.value.data) && tRes.value.data.length > 0) {
+    if (tRes.status === "fulfilled" && tRes.value.success && Array.isArray(tRes.value.data)) {
       templatesStore.set(tRes.value.data);
     }
     if (qRes.status === "fulfilled" && qRes.value.success && Array.isArray(qRes.value.data)) {
@@ -552,6 +99,12 @@ export async function syncWithBackend() {
     if (sRes.status === "fulfilled" && sRes.value.success && Array.isArray(sRes.value.data)) {
       subscriptionsStore.set(sRes.value.data);
     }
+    if (evRes.status === "fulfilled" && evRes.value?.success && Array.isArray(evRes.value.data)) {
+      eventsStore.set(evRes.value.data);
+    }
+
+    // Also trigger invoice & payment synchronization
+    await syncInvoicesWithBackend();
   } catch (err) {
     console.warn("Backend sync notice:", err);
   }

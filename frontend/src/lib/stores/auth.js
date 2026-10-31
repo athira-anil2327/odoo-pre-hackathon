@@ -37,57 +37,77 @@ export function parseCompanyFromEmail(email) {
   return { domain, suggestedCompany };
 }
 
-// Initial registered users with enterprise roles
+// Initial registered users matching live seeded database
 const initialUsers = [
   {
-    id: "USR-001",
-    email: "admin@brightloop.io",
-    password: "BrightloopAdmin2026!",
-    name: "Brightloop Admin",
+    id: "admin-01",
+    email: "admin@brightloop.com",
+    password: "Admin@BrightLoop2026!",
+    name: "BrightLoop Administrator",
     company: "Brightloop Software Inc.",
     role: "Administrator",
     avatar: "AD",
     customerId: null
   },
   {
-    id: "USR-002",
+    id: "admin-02",
+    email: "admin@brightloop.io",
+    password: "Admin@BrightLoop2026!",
+    name: "Brightloop Executive Admin",
+    company: "Brightloop Software Inc.",
+    role: "Administrator",
+    avatar: "AD",
+    customerId: null
+  },
+  {
+    id: "staff-01",
     email: "sales@brightloop.io",
-    password: "BrightloopStaff2026!",
-    name: "Sarah Jenkins (Staff)",
+    password: "Staff@BrightLoop2026!",
+    name: "Sarah Jenkins",
     company: "Brightloop Software Inc.",
     role: "Staff Operations",
     avatar: "SJ",
     customerId: null
   },
   {
-    id: "USR-003",
+    id: "staff-02",
+    email: "staff@brightloop.io",
+    password: "Staff@BrightLoop2026!",
+    name: "Marcus Brody",
+    company: "Brightloop Software Inc.",
+    role: "Staff Operations",
+    avatar: "MB",
+    customerId: null
+  },
+  {
+    id: "cust-01",
     email: "eleanor.vance@nexushealth.org",
-    password: "CustomerSecret2026!",
+    password: "Customer@BrightLoop2026!",
     name: "Dr. Eleanor Vance",
     company: "Nexus Health Systems",
     role: "Customer Portal",
     avatar: "EV",
-    customerId: "CUST-1001"
+    customerId: "CUST-2026-000001"
   },
   {
-    id: "USR-004",
+    id: "cust-02",
     email: "billing@apexlogistics.com",
-    password: "ApexPassword2026!",
-    name: "Marcus Brody",
+    password: "Customer@BrightLoop2026!",
+    name: "David Sterling",
     company: "Apex Logistics Corp",
     role: "Customer Portal",
-    avatar: "MB",
-    customerId: "CUST-1002"
+    avatar: "DS",
+    customerId: "CUST-2026-000002"
   },
   {
-    id: "USR-005",
+    id: "cust-03",
     email: "contact@greenleaf.shop",
-    password: "Greenleaf2026!",
-    name: "Greenleaf Operations",
+    password: "Customer@BrightLoop2026!",
+    name: "Amara Green",
     company: "Greenleaf Retailers Inc.",
     role: "Customer Portal",
-    avatar: "GL",
-    customerId: "CUST-1003"
+    avatar: "AG",
+    customerId: "CUST-2026-000003"
   }
 ];
 

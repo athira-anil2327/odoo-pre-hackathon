@@ -30,30 +30,35 @@
 
   let financeSummary = $state({
     currency: 'INR',
-    active_subscriptions_count: '5',
-    monthly_recurring_revenue: '3105.62',
-    total_revenue_collected: '2347.62',
-    total_outstanding_amount: '1149.62',
-    overdue_invoices_count: '1',
-    overdue_amount: '1149.62'
+    active_subscriptions_count: 6,
+    monthly_recurring_revenue: 7190.53,
+    total_revenue_collected: 20298.06,
+    total_outstanding_amount: 3572.16,
+    overdue_invoices_count: 2,
+    overdue_amount: 3220.52
   });
 
-  const chartData = {
-    labels: ["May", "Jun", "Jul", "Aug", "Sep", "Oct"],
-    datasets: [
-      {
-        label: "Monthly Recurring Revenue (MRR)",
-        data: [11200, 12800, 14100, 15600, 16400, 17850]
-      }
-    ]
-  };
+  const chartData = $derived.by(() => {
+    const base = Number(financeSummary.monthly_recurring_revenue) || 7190;
+    return {
+      labels: ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov"],
+      datasets: [
+        {
+          label: "Monthly Recurring Revenue (MRR)",
+          data: [
+            Math.round(base * 0.55),
+            Math.round(base * 0.70),
+            Math.round(base * 0.85),
+            Math.round(base * 0.92),
+            Math.round(base * 1.00),
+            Math.round(base * 1.08)
+          ]
+        }
+      ]
+    };
+  });
 
-  let recentInvoices = $state([
-    { id: "INV-2026-001", customer: "Nexus Health Systems", date: "Oct 19, 2026", amount: "₹3,660.03", status: "Paid", badgeClass: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200/60" },
-    { id: "INV-2026-002", customer: "CloudScale Analytics Inc.", date: "Oct 22, 2026", amount: "₹10,642.50", status: "Paid", badgeClass: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200/60" },
-    { id: "INV-2026-003", customer: "Apex Retail Solutions", date: "Oct 25, 2026", amount: "₹857.85", status: "Partially Paid", badgeClass: "bg-amber-50 text-amber-700 border-amber-200/60" },
-    { id: "INV-2026-004", customer: "FinGuard Global Security", date: "Oct 28, 2026", amount: "₹1,540.00", status: "Overdue", badgeClass: "bg-rose-50 text-rose-700 border-rose-200/60" }
-  ]);
+  let recentInvoices = $state([]);
 
   $effect(() => {
     if (browser) {

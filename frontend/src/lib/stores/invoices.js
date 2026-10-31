@@ -9,7 +9,16 @@ function loadStore(key, fallback) {
     const saved = localStorage.getItem(`bl_${key}`);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.some(item => 
+          item?.id === "INV-2026-000001" || 
+          item?.id === "PAY-2026-000001" || 
+          item?.invoice_number === "INV-2034"
+        )) {
+          localStorage.removeItem(`bl_${key}`);
+          return fallback;
+        }
+        return parsed;
       } catch (e) {
         console.error(`Error parsing store ${key}`, e);
       }
@@ -24,243 +33,9 @@ function persistStore(key, value) {
   }
 }
 
-// Initial Invoices aligned with PostgreSQL schema and initial subscriptions/customers
-const initialInvoices = [
-  {
-    id: "INV-2026-000001",
-    invoice_number: "INV-2026-000001",
-    subscription_id: "SUB-2026-0001",
-    subscription_number: "SUB-2026-0001",
-    customer_id: "CUST-1001",
-    customer_name: "Nexus Health Systems",
-    contact_name: "Dr. Eleanor Vance",
-    contact_email: "eleanor.vance@nexushealth.org",
-    billing_address: "742 Evergreen Terrace, Springfield, OR",
-    tax_id: "GST-29AABCU9603R1ZM",
-    billing_period_start: "2026-10-01",
-    billing_period_end: "2026-10-31",
-    invoice_date: "2026-10-01",
-    due_date: "2026-10-31",
-    currency: "INR",
-    subtotal: 1059.00,
-    tax_total: 190.62,
-    discount_total: 0.00,
-    total_amount: 1249.62,
-    paid_amount: 1249.62,
-    outstanding_amount: 0.00,
-    status: "paid",
-    sent_at: "2026-10-01 10:00:00",
-    notes: "Monthly billing cycle for Growth Cloud Cloud ERP suite",
-    lines: [
-      {
-        id: "IL-001",
-        product_id: "PROD-1001",
-        product_name: "Business ERP Suite",
-        variant_name: "Odoo Enterprise Edition (+560.00)",
-        description: "Business ERP Suite - Odoo Enterprise Edition with CRM & Billing",
-        period_start: "2026-10-01",
-        period_end: "2026-10-31",
-        quantity: 1,
-        unit_price: 1059.00,
-        line_subtotal: 1059.00,
-        tax_rate_snapshot: 18.00,
-        tax_amount: 190.62,
-        discount_amount: 0.00,
-        line_total: 1249.62
-      }
-    ]
-  },
-  {
-    id: "INV-2026-000002",
-    invoice_number: "INV-2026-000002",
-    subscription_id: "SUB-2026-0002",
-    subscription_number: "SUB-2026-0002",
-    customer_id: "CUST-1002",
-    customer_name: "Apex Logistics Corp",
-    contact_name: "Marcus Brody",
-    contact_email: "billing@apexlogistics.com",
-    billing_address: "1200 Market Street, Suite 400, Philadelphia, PA",
-    tax_id: "GST-27AAACP1234F1ZQ",
-    billing_period_start: "2026-09-15",
-    billing_period_end: "2026-10-14",
-    invoice_date: "2026-09-15",
-    due_date: "2026-10-15",
-    currency: "INR",
-    subtotal: 199.00,
-    tax_total: 35.82,
-    discount_total: 0.00,
-    total_amount: 234.82,
-    paid_amount: 100.00,
-    outstanding_amount: 134.82,
-    status: "partially_paid",
-    sent_at: "2026-09-15 11:30:00",
-    notes: "Starter Monthly subscription billing term with partial payment recorded",
-    lines: [
-      {
-        id: "IL-002",
-        product_id: "PROD-1001",
-        product_name: "Business ERP Suite",
-        variant_name: "Standard Edition",
-        description: "Starter Monthly - Standard Edition suite",
-        period_start: "2026-09-15",
-        period_end: "2026-10-14",
-        quantity: 1,
-        unit_price: 199.00,
-        line_subtotal: 199.00,
-        tax_rate_snapshot: 18.00,
-        tax_amount: 35.82,
-        discount_amount: 0.00,
-        line_total: 234.82
-      }
-    ]
-  },
-  {
-    id: "INV-2026-000003",
-    invoice_number: "INV-2026-000003",
-    subscription_id: "SUB-2026-0002",
-    subscription_number: "SUB-2026-0002",
-    customer_id: "CUST-1002",
-    customer_name: "Apex Logistics Corp",
-    contact_name: "Marcus Brody",
-    contact_email: "billing@apexlogistics.com",
-    billing_address: "1200 Market Street, Suite 400, Philadelphia, PA",
-    tax_id: "GST-27AAACP1234F1ZQ",
-    billing_period_start: "2026-10-15",
-    billing_period_end: "2026-11-14",
-    invoice_date: "2026-10-15",
-    due_date: "2026-10-25", // Deliberately past due for demonstration
-    currency: "INR",
-    subtotal: 199.00,
-    tax_total: 35.82,
-    discount_total: 0.00,
-    total_amount: 234.82,
-    paid_amount: 0.00,
-    outstanding_amount: 234.82,
-    status: "confirmed",
-    sent_at: "2026-10-15 09:00:00",
-    notes: "Overdue monthly renewal cycle invoice",
-    lines: [
-      {
-        id: "IL-003",
-        product_id: "PROD-1001",
-        product_name: "Business ERP Suite",
-        variant_name: "Standard Edition",
-        description: "Starter Monthly - Standard Edition suite",
-        period_start: "2026-10-15",
-        period_end: "2026-11-14",
-        quantity: 1,
-        unit_price: 199.00,
-        line_subtotal: 199.00,
-        tax_rate_snapshot: 18.00,
-        tax_amount: 35.82,
-        discount_amount: 0.00,
-        line_total: 234.82
-      }
-    ]
-  },
-  {
-    id: "INV-2026-000004",
-    invoice_number: "INV-2026-000004",
-    subscription_id: "SUB-2026-0001",
-    subscription_number: "SUB-2026-0001",
-    customer_id: "CUST-1001",
-    customer_name: "Nexus Health Systems",
-    contact_name: "Dr. Eleanor Vance",
-    contact_email: "eleanor.vance@nexushealth.org",
-    billing_address: "742 Evergreen Terrace, Springfield, OR",
-    tax_id: "GST-29AABCU9603R1ZM",
-    billing_period_start: "2026-09-01",
-    billing_period_end: "2026-09-30",
-    invoice_date: "2026-09-01",
-    due_date: "2026-09-30",
-    currency: "INR",
-    subtotal: 1059.00,
-    tax_total: 190.62,
-    discount_total: 0.00,
-    total_amount: 1249.62,
-    paid_amount: 1249.62,
-    outstanding_amount: 0.00,
-    status: "paid",
-    sent_at: "2026-09-01 10:00:00",
-    notes: "Initial deployment cycle",
-    lines: [
-      {
-        id: "IL-004",
-        product_id: "PROD-1001",
-        product_name: "Business ERP Suite",
-        variant_name: "Odoo Enterprise Edition (+560.00)",
-        description: "Business ERP Suite - Odoo Enterprise Edition license",
-        period_start: "2026-09-01",
-        period_end: "2026-09-30",
-        quantity: 1,
-        unit_price: 1059.00,
-        line_subtotal: 1059.00,
-        tax_rate_snapshot: 18.00,
-        tax_amount: 190.62,
-        discount_amount: 0.00,
-        line_total: 1249.62
-      }
-    ]
-  }
-];
-
-// Initial Payment Records aligned with PostgreSQL schema
-const initialPayments = [
-  {
-    id: "PAY-2026-000001",
-    payment_number: "PAY-2026-000001",
-    invoice_id: "INV-2026-000001",
-    invoice_number: "INV-2026-000001",
-    customer_id: "CUST-1001",
-    customer_name: "Nexus Health Systems",
-    payment_method: "bank_transfer",
-    amount: 1249.62,
-    currency: "INR",
-    payment_date: "2026-10-02",
-    reference_number: "NEFT-HDFC-9918231",
-    note: "Corporate RTGS/NEFT settlement received",
-    idempotency_key: "IDEMP-PAY-0001",
-    status: "Settled",
-    created_at: "2026-10-02 11:30:00"
-  },
-  {
-    id: "PAY-2026-000002",
-    payment_number: "PAY-2026-000002",
-    invoice_id: "INV-2026-000002",
-    invoice_number: "INV-2026-000002",
-    customer_id: "CUST-1002",
-    customer_name: "Apex Logistics Corp",
-    payment_method: "upi",
-    amount: 100.00,
-    currency: "INR",
-    payment_date: "2026-09-20",
-    reference_number: "UPI-ICICI-4820194",
-    note: "Partial interim deposit via UPI handle",
-    idempotency_key: "IDEMP-PAY-0002",
-    status: "Settled",
-    created_at: "2026-09-20 16:45:00"
-  },
-  {
-    id: "PAY-2026-000003",
-    payment_number: "PAY-2026-000003",
-    invoice_id: "INV-2026-000004",
-    invoice_number: "INV-2026-000004",
-    customer_id: "CUST-1001",
-    customer_name: "Nexus Health Systems",
-    payment_method: "credit_card",
-    amount: 1249.62,
-    currency: "INR",
-    payment_date: "2026-09-02",
-    reference_number: "CC-VISA-4242-AUTH819",
-    note: "Direct online auto-charge processed via payment gateway",
-    idempotency_key: "IDEMP-PAY-0003",
-    status: "Settled",
-    created_at: "2026-09-02 09:12:00"
-  }
-];
-
-export const invoicesStore = writable(loadStore("invoices", initialInvoices));
-export const paymentsStore = writable(loadStore("payments", initialPayments));
+// Stores initialized with empty arrays; hydrated from PostgreSQL database
+export const invoicesStore = writable(loadStore("invoices", []));
+export const paymentsStore = writable(loadStore("payments", []));
 
 if (browser) {
   invoicesStore.subscribe(val => persistStore("invoices", val));
@@ -300,28 +75,12 @@ export async function syncInvoicesWithBackend() {
         lines: i.lines || []
       }));
 
-      invoicesStore.update(currentList => {
-        const merged = [...dbInvoices];
-        for (const local of currentList) {
-          if (!merged.some(m => m.id === local.id || m.invoice_number === local.invoice_number)) {
-            merged.push(local);
-          }
-        }
-        return merged;
-      });
+      invoicesStore.set(dbInvoices);
     }
 
     const payRes = await paymentsApi.getAll();
     if (payRes.success && Array.isArray(payRes.data)) {
-      paymentsStore.update(currentPayments => {
-        const merged = [...payRes.data];
-        for (const local of currentPayments) {
-          if (!merged.some(p => p.id === local.id || p.payment_number === local.payment_number)) {
-            merged.push(local);
-          }
-        }
-        return merged;
-      });
+      paymentsStore.set(payRes.data);
     }
   } catch (err) {
     console.warn("Could not sync invoices with backend:", err.message);

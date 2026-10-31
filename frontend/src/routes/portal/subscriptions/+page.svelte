@@ -12,36 +12,69 @@
     X,
     FileText
   } from "lucide-svelte";
+  import { currentUser } from "$lib/stores/auth.js";
+  import {
+    subscriptionsStore,
+    customersStore,
+    plansStore
+  } from "$lib/stores/coreManagement.js";
 
   let showUpgradeModal = $state(false);
-  let selectedPlan = $state("Enterprise Suite");
+  let selectedPlanId = $state("");
 
-  const plans = [
-    {
-      name: "Starter Cloud",
-      price: "$1,800",
-      period: "/month",
-      desc: "For small teams getting started",
-      features: ["Up to 5 Team Seats", "Standard API Access", "Email Support", "10 GB Storage"],
-      current: false
-    },
-    {
-      name: "Enterprise Suite",
-      price: "$4,200",
-      period: "/month",
-      desc: "Our complete platform for scaling businesses",
-      features: ["Up to 25 Team Seats", "Unlimited API Calls", "24/7 Priority Support", "500 GB Storage", "SSO & SAML Auth", "Audit Logging"],
-      current: true
-    },
-    {
-      name: "Dedicated Cloud",
-      price: "$8,900",
-      period: "/month",
-      desc: "Isolated instance with custom SLAs",
-      features: ["Unlimited Team Seats", "Custom Integrations", "Dedicated Account Manager", "99.99% Uptime SLA", "Custom Backup Policies"],
-      current: false
-    }
-  ];
+  function formatCurrency(val) {
+    const num = parseFloat(val) || 0;
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 2
+    }).format(num);
+  }
+
+  // Find linked customer profile
+  const currentCustomer = $derived(
+    $customersStore.find(c => c.email?.toLowerCase() === ($currentUser?.email || "").toLowerCase()) ||
+    $customersStore[0]
+  );
+
+  const mySubscriptions = $derived(
+    currentCustomer
+      ? $subscriptionsStore.filter(s => s.customer_id === currentCustomer.id)
+      : []
+  );
+
+  const activeSubscription = $derived(
+    mySubscriptions.find(s => s.status?.toLowerCase() === "active") || mySubscriptions[0]
+  );
+
+  const activePlan = $derived(
+    activeSubscription ? $plansStore.find(p => p.id === activeSubscription.plan_id) : null
+  );
+
+  const displayPlans = $derived(
+    $plansStore.map(p => {
+      const isCurrent = activeSubscription?.plan_id === p.id;
+      const features = p.billing_frequency === "yearly"
+        ? ["Unlimited Seats Allocation", "24/7 SLA Priority Support", "SOC-2 Compliance Vault", "Dedicated Account Manager"]
+        : p.name.includes("Growth")
+        ? ["Full Enterprise ERP Module", "Automated Invoicing Engine", "Email & Chat Support", "Standard API Access"]
+        : ["Core Billing & Invoicing", "Up to 5 Users", "Standard GST Computation", "Community Support"];
+
+      return {
+        id: p.id,
+        name: p.name,
+        price: formatCurrency(p.price),
+        period: `/${p.billing_frequency === 'yearly' ? 'year' : 'month'}`,
+        desc: p.name.includes("Enterprise")
+          ? "Comprehensive annual contract for scaling enterprise operations"
+          : p.name.includes("Growth")
+          ? "Our complete software platform for scaling businesses"
+          : "Essential starter features for small teams",
+        features,
+        current: isCurrent
+      };
+    })
+  );
 </script>
 
 <AppShell title="My Subscriptions & Plan">
@@ -51,7 +84,7 @@
       <div>
         <h2 class="text-xl font-bold text-zinc-900 tracking-tight">Subscription Plan & Entitlements</h2>
         <p class="text-xs text-zinc-500 mt-1">
-          Review your active software license, manage team seat allocation, and upgrade tiers.
+          Review your active software license, manage subscription tiers, and upgrade platform capacity.
         </p>
       </div>
 
@@ -65,55 +98,72 @@
     </div>
 
     <!-- Active Subscription Highlight Card -->
-    <Card.Root class="bg-white border-zinc-200/80 shadow-xs rounded-xl overflow-hidden p-6">
-      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div class="space-y-2">
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-[#183f42] uppercase tracking-wider">Active Contract</span>
-            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Auto-Renewing
-            </span>
+    {#if activeSubscription}
+      <Card.Root class="bg-white border-zinc-200/80 shadow-xs rounded-xl overflow-hidden p-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-[#183f42] uppercase tracking-wider">
+                Contract: {activeSubscription.subscription_number || activeSubscription.id}
+              </span>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
+                {activeSubscription.status}
+              </span>
+            </div>
+            <h3 class="text-2xl font-bold text-zinc-900">
+              {activePlan?.name || "Enterprise Cloud Plan"}
+            </h3>
+            <p class="text-xs text-zinc-500 max-w-xl leading-relaxed">
+              Licensed to {currentCustomer?.company || currentCustomer?.name || "Corporate Account"}. Recurring automated billing terms managed via Brightloop platform.
+            </p>
+            <div class="flex flex-wrap items-center gap-4 pt-2 text-xs text-zinc-600">
+              <div class="flex items-center gap-1.5">
+                <ShieldCheck class="w-4 h-4 text-emerald-600" />
+                <span>99.9% Uptime SLA</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <Users class="w-4 h-4 text-[#183f42]" />
+                <span>GST Tax ID: {currentCustomer?.tax_id || "GST Verified"}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <Repeat class="w-4 h-4 text-blue-600" />
+                <span>
+                  Next Billing Date: {activeSubscription.next_billing_date ? new Date(activeSubscription.next_billing_date).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "N/A"}
+                </span>
+              </div>
+            </div>
           </div>
-          <h3 class="text-2xl font-bold text-zinc-900">Enterprise Cloud Plan</h3>
-          <p class="text-xs text-zinc-500 max-w-xl leading-relaxed">
-            Annual subscription with monthly billing cycles. Includes full enterprise modules, SOC-2 compliance, custom webhooks, and 25 seats.
-          </p>
-          <div class="flex flex-wrap items-center gap-4 pt-2 text-xs text-zinc-600">
-            <div class="flex items-center gap-1.5">
-              <ShieldCheck class="w-4 h-4 text-emerald-600" />
-              <span>99.9% Uptime Guarantee</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <Users class="w-4 h-4 text-[#183f42]" />
-              <span>18 of 25 Seats Active</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <Repeat class="w-4 h-4 text-blue-600" />
-              <span>Next Renewal: Nov 28, 2026</span>
-            </div>
-          </div>
-        </div>
 
-        <div class="p-5 rounded-2xl bg-zinc-50 border border-zinc-200/70 text-right shrink-0">
-          <div class="text-xs text-zinc-400">Recurring Price</div>
-          <div class="text-2xl font-bold text-zinc-900 mt-1">$4,200.00 <span class="text-xs font-normal text-zinc-500">/mo</span></div>
-          <div class="text-[11px] text-zinc-400 mt-0.5">Billed to Visa •••• 4242</div>
-          <Button
-            size="sm"
-            onclick={() => (showUpgradeModal = true)}
-            class="bg-[#183f42] text-white shadow-xs text-xs h-8 mt-3 w-full"
-          >
-            Modify Tier
-          </Button>
+          <div class="p-5 rounded-2xl bg-zinc-50 border border-zinc-200/70 text-right shrink-0 min-w-56">
+            <div class="text-xs text-zinc-400">Total Recurring Rate</div>
+            <div class="text-2xl font-bold text-zinc-900 mt-1">
+              {formatCurrency(activeSubscription.total_amount)}
+              <span class="text-xs font-normal text-zinc-500">/mo</span>
+            </div>
+            <div class="text-[11px] text-zinc-400 mt-0.5">
+              Payment Terms: {activeSubscription.payment_terms || "Net 30"}
+            </div>
+            <Button
+              size="sm"
+              onclick={() => (showUpgradeModal = true)}
+              class="bg-[#183f42] text-white shadow-xs text-xs h-8 mt-3 w-full"
+            >
+              Modify Tier
+            </Button>
+          </div>
         </div>
-      </div>
-    </Card.Root>
+      </Card.Root>
+    {:else}
+      <Card.Root class="p-8 text-center bg-white border-zinc-200/80 rounded-xl">
+        <p class="text-xs text-zinc-500">No active subscription found for your customer account.</p>
+      </Card.Root>
+    {/if}
 
     <!-- Available Plans Comparison -->
     <div>
       <h3 class="text-sm font-bold text-zinc-900 mb-3">Available Platform Tiers</h3>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {#each plans as plan}
+        {#each displayPlans as plan}
           <div class={`rounded-2xl p-5 border bg-white flex flex-col justify-between transition-all ${
             plan.current
               ? "border-[#183f42] shadow-md ring-1 ring-[#bde4df]"
@@ -153,7 +203,10 @@
               {:else}
                 <Button
                   variant="outline"
-                  onclick={() => (showUpgradeModal = true)}
+                  onclick={() => {
+                    selectedPlanId = plan.id;
+                    showUpgradeModal = true;
+                  }}
                   class="w-full text-xs h-8 border-zinc-200 hover:border-[#bde4df] hover:bg-[#e6f4f2]/50"
                 >
                   Select Plan
@@ -185,12 +238,12 @@
             </p>
 
             <div class="space-y-2">
-              {#each plans as p}
+              {#each displayPlans as p}
                 <button
                   type="button"
-                  onclick={() => (selectedPlan = p.name)}
+                  onclick={() => (selectedPlanId = p.id)}
                   class={`w-full p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
-                    selectedPlan === p.name
+                    selectedPlanId === p.id
                       ? "border-[#183f42] bg-[#e6f4f2]/40 ring-1 ring-[#183f42]/30"
                       : "border-zinc-200 bg-zinc-50/50 hover:bg-zinc-50"
                   }`}
@@ -199,7 +252,7 @@
                     <div class="font-bold text-zinc-900">{p.name}</div>
                     <div class="text-[11px] text-zinc-500">{p.price} {p.period}</div>
                   </div>
-                  {#if selectedPlan === p.name}
+                  {#if selectedPlanId === p.id}
                     <Check class="w-4 h-4 text-[#183f42]" />
                   {/if}
                 </button>

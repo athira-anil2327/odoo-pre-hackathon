@@ -446,3 +446,22 @@ export const getSubscriptionEvents = async (req, res) => {
     return errorResponse(res, "Failed to retrieve events: " + err.message, 500);
   }
 };
+
+
+export const getAllSubscriptionEvents = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT se.*, u.name AS performed_by_name, s.subscription_number, c.name AS customer_name, c.company AS customer_company
+       FROM subscription_events se
+       JOIN subscriptions s ON s.id = se.subscription_id
+       JOIN customers c ON c.id = s.customer_id
+       LEFT JOIN users u ON u.id = se.performed_by
+       ORDER BY se.event_date DESC
+       LIMIT 50;`
+    );
+
+    return successResponse(res, result.rows, "All subscription events retrieved.");
+  } catch (err) {
+    return errorResponse(res, "Failed to retrieve all events: " + err.message, 500);
+  }
+};

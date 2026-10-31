@@ -53,10 +53,7 @@
   let createdStaffData = $state(null);
 
   // Live staff users loaded from backend database
-  let staffMembers = $state([
-    { id: "STF-1", name: "Sarah Jenkins", email: "sales@brightloop.io", phone: "+1 (555) 100-0002", role: "staff" },
-    { id: "STF-2", name: "Marcus Brody", email: "staff@brightloop.io", phone: "+1 (555) 100-0003", role: "staff" }
-  ]);
+  let staffMembers = $state([]);
 
   async function loadStaffUsers() {
     if (!browser) return;

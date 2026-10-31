@@ -7,6 +7,7 @@
   import {
     subscriptionsStore,
     customersStore,
+    plansStore,
     pauseSubscription,
     resumeSubscription
   } from "$lib/stores/coreManagement.js";
@@ -33,9 +34,18 @@
   let isPaymentSuccess = $state(false);
   let actionMessage = $state("");
 
+  function formatCurrency(val) {
+    const num = parseFloat(val) || 0;
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 2
+    }).format(num);
+  }
+
   // Find linked customer profile and their subscriptions
   const currentCustomer = $derived(
-    $customersStore.find(c => c.email.toLowerCase() === ($currentUser.email || "").toLowerCase()) ||
+    $customersStore.find(c => c.email?.toLowerCase() === ($currentUser?.email || "").toLowerCase()) ||
     $customersStore[0]
   );
 
@@ -46,8 +56,18 @@
   );
 
   const activeSubscription = $derived(
-    mySubscriptions.find(s => s.status === "Active") || mySubscriptions[0]
+    mySubscriptions.find(s => s.status?.toLowerCase() === "active") || mySubscriptions[0]
   );
+
+  function getPlanName(planId, fallback) {
+    const p = $plansStore.find(plan => plan.id === planId);
+    return p ? p.name : (fallback || "Enterprise Cloud Subscription");
+  }
+
+  function getPlanFrequency(planId, fallback) {
+    const p = $plansStore.find(plan => plan.id === planId);
+    return p ? p.billing_frequency : (fallback || "monthly");
+  }
 
   function handleCustomerPause(subId) {
     try {
@@ -112,19 +132,21 @@
           <div>
             <span class="text-[10px] font-bold text-[#8c9ba5] uppercase tracking-wider">Current Active Plan</span>
             <div class="flex items-center gap-2 mt-1">
-              <h3 class="text-lg font-bold text-[#122b2e]">{activeSubscription.plan_name}</h3>
-              <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-[#e6f4f2] text-[#143e42] border border-[#bde4df]">
+              <h3 class="text-lg font-bold text-[#122b2e]">
+                {activeSubscription.plan_name || getPlanName(activeSubscription.plan_id)}
+              </h3>
+              <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-[#e6f4f2] text-[#143e42] border border-[#bde4df] uppercase">
                 {activeSubscription.status}
               </span>
             </div>
             <p class="text-xs text-[#7e9599] mt-1">
-              Contract #{activeSubscription.subscription_number} • Billed {activeSubscription.billing_frequency}
+              Contract #{activeSubscription.subscription_number} • Billed {activeSubscription.billing_frequency || getPlanFrequency(activeSubscription.plan_id)}
             </p>
           </div>
 
           <!-- Customer Self-Service Actions -->
           <div class="flex items-center gap-2">
-            {#if activeSubscription.status === "Active"}
+            {#if activeSubscription.status?.toLowerCase() === "active"}
               <Button
                 onclick={() => handleCustomerPause(activeSubscription.id)}
                 variant="outline"
@@ -133,7 +155,7 @@
               >
                 <Pause class="w-3.5 h-3.5" /> Pause Plan
               </Button>
-            {:else if activeSubscription.status === "Paused"}
+            {:else if activeSubscription.status?.toLowerCase() === "paused"}
               <Button
                 onclick={() => handleCustomerResume(activeSubscription.id)}
                 size="xs"
@@ -152,7 +174,7 @@
               <Calendar class="w-3.5 h-3.5 text-[#183f42]" /> Next Billing Date
             </div>
             <div class="text-sm font-bold text-[#122b2e] mt-1">
-              {activeSubscription.next_billing_date || "—"}
+              {activeSubscription.next_billing_date ? new Date(activeSubscription.next_billing_date).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "—"}
             </div>
           </div>
 
@@ -161,7 +183,7 @@
               <Clock class="w-3.5 h-3.5 text-[#183f42]" /> Contract Expiry Date
             </div>
             <div class="text-sm font-bold text-[#122b2e] mt-1">
-              {activeSubscription.expiry_date || "Perpetual"}
+              {activeSubscription.expiry_date ? new Date(activeSubscription.expiry_date).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "Perpetual"}
             </div>
           </div>
 
@@ -170,8 +192,8 @@
               <DollarSign class="w-3.5 h-3.5 text-[#183f42]" /> Recurring Amount
             </div>
             <div class="text-base font-extrabold text-[#183f42] mt-0.5">
-              ${Number(activeSubscription.total_amount).toFixed(2)}
-              <span class="text-xs font-normal text-[#7e9599]">/{activeSubscription.billing_frequency}</span>
+              {formatCurrency(activeSubscription.total_amount)}
+              <span class="text-xs font-normal text-[#7e9599]">/{activeSubscription.billing_frequency || getPlanFrequency(activeSubscription.plan_id)}</span>
             </div>
           </div>
         </div>
@@ -195,30 +217,40 @@
               </Table.Row>
             </Table.Header>
             <Table.Body class="text-xs">
-              {#each mySubscriptions as sub}
-                <Table.Row class="hover:bg-[#f8fafb] border-[#f4f7f8]">
-                  <Table.Cell class="py-3 px-4 font-bold text-[#122b2e]">{sub.subscription_number}</Table.Cell>
-                  <Table.Cell class="py-3 px-4 font-medium text-[#122b2e]">{sub.plan_name}</Table.Cell>
-                  <Table.Cell class="py-3 px-4 text-[#586f73] capitalize">{sub.billing_frequency}</Table.Cell>
-                  <Table.Cell class="py-3 px-4 text-[#7e9599]">{sub.next_billing_date || "—"}</Table.Cell>
-                  <Table.Cell class="py-3 px-4 text-right font-bold text-[#122b2e]">
-                    ${Number(sub.total_amount).toFixed(2)}
-                  </Table.Cell>
-                  <Table.Cell class="py-3 px-4 text-center">
-                    <span class={`inline-flex items-center text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${
-                      sub.status === 'Active'
-                        ? 'bg-[#e6f4f2] text-[#143e42] border-[#bde4df]'
-                        : sub.status === 'Confirmed'
-                        ? 'bg-blue-50 text-blue-700 border-blue-200'
-                        : sub.status === 'Paused'
-                        ? 'bg-amber-50 text-amber-800 border-amber-200'
-                        : 'bg-zinc-100 text-zinc-600 border-zinc-200'
-                    }`}>
-                      {sub.status}
-                    </span>
-                  </Table.Cell>
+              {#if mySubscriptions.length === 0}
+                <Table.Row>
+                  <Table.Cell colspan="6" class="text-center py-6 text-zinc-400">No subscriptions registered under this account.</Table.Cell>
                 </Table.Row>
-              {/each}
+              {:else}
+                {#each mySubscriptions as sub}
+                  <Table.Row class="hover:bg-[#f8fafb] border-[#f4f7f8]">
+                    <Table.Cell class="py-3 px-4 font-bold text-[#122b2e]">{sub.subscription_number || sub.id}</Table.Cell>
+                    <Table.Cell class="py-3 px-4 font-medium text-[#122b2e]">
+                      {sub.plan_name || getPlanName(sub.plan_id)}
+                    </Table.Cell>
+                    <Table.Cell class="py-3 px-4 text-[#586f73] capitalize">{sub.billing_frequency || getPlanFrequency(sub.plan_id)}</Table.Cell>
+                    <Table.Cell class="py-3 px-4 text-[#7e9599]">
+                      {sub.next_billing_date ? new Date(sub.next_billing_date).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                    </Table.Cell>
+                    <Table.Cell class="py-3 px-4 text-right font-bold text-[#122b2e]">
+                      {formatCurrency(sub.total_amount)}
+                    </Table.Cell>
+                    <Table.Cell class="py-3 px-4 text-center">
+                      <span class={`inline-flex items-center text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${
+                        sub.status?.toLowerCase() === 'active'
+                          ? 'bg-[#e6f4f2] text-[#143e42] border-[#bde4df]'
+                          : sub.status?.toLowerCase() === 'confirmed'
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : sub.status?.toLowerCase() === 'paused'
+                          ? 'bg-amber-50 text-amber-800 border-amber-200'
+                          : 'bg-zinc-100 text-zinc-600 border-zinc-200'
+                      }`}>
+                        {sub.status}
+                      </span>
+                    </Table.Cell>
+                  </Table.Row>
+                {/each}
+              {/if}
             </Table.Body>
           </Table.Root>
         </Card.Content>

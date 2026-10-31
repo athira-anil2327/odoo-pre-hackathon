@@ -22,8 +22,8 @@
     EyeOff
   } from "lucide-svelte";
 
-  let email = $state("admin@brightloop.io");
-  let password = $state("BrightloopAdmin2026!");
+  let email = $state("admin@brightloop.com");
+  let password = $state("Admin@BrightLoop2026!");
   let showPassword = $state(false);
   let errorMessage = $state("");
   let showForgotPassword = $state(false);
@@ -84,14 +84,14 @@
 
   function handleSelectPersona(role) {
     if (role === "admin") {
-      email = "admin@brightloop.io";
-      password = "BrightloopAdmin2026!";
+      email = "admin@brightloop.com";
+      password = "Admin@BrightLoop2026!";
     } else if (role === "staff") {
       email = "sales@brightloop.io";
-      password = "BrightloopStaff2026!";
+      password = "Staff@BrightLoop2026!";
     } else {
       email = "eleanor.vance@nexushealth.org";
-      password = "CustomerSecret2026!";
+      password = "Customer@BrightLoop2026!";
     }
   }
 

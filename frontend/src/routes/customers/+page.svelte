@@ -146,7 +146,7 @@
                 </Table.Cell>
                 <Table.Cell class="py-3 px-4 text-center">
                   <span class="inline-flex items-center text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-[#e6f4f2] text-[#143e42] border border-[#bde4df]">
-                    {c.status}
+                    {c.status || (c.is_active !== false ? "Active" : "Inactive")}
                   </span>
                 </Table.Cell>
                 <Table.Cell class="py-3 px-4 text-right">
