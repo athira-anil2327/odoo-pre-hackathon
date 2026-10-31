@@ -27,8 +27,8 @@
 }
 
 :root {
-  /* Theme Palette from theme.jpeg */
-  --backdrop: #234b4f; /* Outer Dark Slate Teal */
+  /* Theme Palette */
+  --backdrop: #f8fafb; /* Outer Clean Light Neutral */
   --primary: #183f42; /* Main Brand Dark Teal / Petrol */
   --primary-hover: #123033;
   --primary-foreground: #FFFFFF;
@@ -58,7 +58,7 @@
 }
 
 body {
-  background-color: var(--backdrop);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   min-height: 100vh;
@@ -66,7 +66,7 @@ body {
 
 /* Custom Theme Utility Classes */
 .bg-theme-backdrop {
-  background-color: #234b4f;
+  background-color: #f8fafb;
 }
 
 .bg-theme-primary {

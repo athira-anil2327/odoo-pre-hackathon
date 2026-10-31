@@ -93,7 +93,7 @@
   }
 </script>
 
-<aside class="w-full md:w-60 lg:w-64 bg-white border-r border-[#eef2f3] flex flex-col justify-between shrink-0 select-none">
+<aside class="w-full md:w-60 lg:w-64 bg-white border-r border-[#eef2f3] flex flex-col justify-between shrink-0 select-none md:min-h-screen md:sticky md:top-0 md:h-screen">
   <div>
     <!-- Logo & Brand Dropdown matching theme.jpeg -->
     <div class="h-20 px-6 flex items-center border-b border-[#f0f4f5]">

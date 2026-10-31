@@ -16,10 +16,10 @@
   }
 </script>
 
-<div class="min-h-screen bg-[#234b4f] flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans">
+<div class="min-h-screen bg-[#f8fafb] flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans">
   <div class="w-full max-w-sm relative z-10">
     <div class="text-center mb-6">
-      <div class="w-12 h-12 rounded-2xl bg-[#183f42] text-white flex items-center justify-center mx-auto mb-3 shadow-md ring-2 ring-white/10">
+      <div class="w-12 h-12 rounded-2xl bg-[#183f42] text-white flex items-center justify-center mx-auto mb-3 shadow-md">
         <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-dasharray="2 3" />
           <path d="M7 12h10" />
@@ -27,11 +27,11 @@
           <path d="M9 16h6" />
         </svg>
       </div>
-      <h1 class="text-xl font-bold text-white tracking-tight">Brightloop Software</h1>
-      <p class="text-xs text-teal-100/70 mt-0.5">Subscription Management System</p>
+      <h1 class="text-xl font-bold text-[#122b2e] tracking-tight">Brightloop Software</h1>
+      <p class="text-xs text-[#7e9599] mt-0.5">Subscription Management System</p>
     </div>
 
-    <Card.Root class="bg-white border-0 shadow-2xl rounded-2xl overflow-hidden">
+    <Card.Root class="bg-white border border-[#edf2f3] shadow-lg rounded-2xl overflow-hidden">
       <div class="h-1.5 bg-[#183f42] w-full"></div>
       <Card.Header class="pb-3 pt-5">
         <Card.Title class="text-sm font-bold text-[#122b2e]">Sign In</Card.Title>
