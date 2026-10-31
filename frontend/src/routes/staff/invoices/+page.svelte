@@ -25,7 +25,7 @@
     {
       id: "INV-2026-001",
       customer: "CloudSphere AI",
-      amount: "₹1,240.00",
+      amount: "$1,240.00",
       rawAmount: 1240,
       dueDate: "Oct 15, 2026",
       status: "Overdue",
@@ -34,7 +34,7 @@
     {
       id: "INV-2026-002",
       customer: "BioSynth Labs",
-      amount: "₹2,450.00",
+      amount: "$2,450.00",
       rawAmount: 2450,
       dueDate: "Oct 20, 2026",
       status: "Overdue",
@@ -43,7 +43,7 @@
     {
       id: "INV-2026-003",
       customer: "Apex Global Tech",
-      amount: "₹4,200.00",
+      amount: "$4,200.00",
       rawAmount: 4200,
       dueDate: "Nov 05, 2026",
       status: "Sent",
@@ -52,7 +52,7 @@
     {
       id: "INV-2026-004",
       customer: "Starlight Media Group",
-      amount: "₹950.00",
+      amount: "$950.00",
       rawAmount: 950,
       dueDate: "Nov 12, 2026",
       status: "Partially Paid",
@@ -61,7 +61,7 @@
     {
       id: "INV-2026-005",
       customer: "Vanguard Dynamics",
-      amount: "₹5,600.00",
+      amount: "$5,600.00",
       rawAmount: 5600,
       dueDate: "Oct 28, 2026",
       status: "Paid",
@@ -107,19 +107,19 @@
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <Card.Root class="bg-white border-zinc-200/80 shadow-xs rounded-xl overflow-hidden p-4">
         <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Total Overdue Receivables</div>
-        <div class="text-xl font-bold text-rose-600 mt-1">₹3,690.00</div>
+        <div class="text-xl font-bold text-rose-600 mt-1">$3,690.00</div>
         <div class="text-[11px] text-zinc-500 mt-0.5">2 accounts require immediate follow-up</div>
       </Card.Root>
 
       <Card.Root class="bg-white border-zinc-200/80 shadow-xs rounded-xl overflow-hidden p-4">
         <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Pending Current Term</div>
-        <div class="text-xl font-bold text-zinc-900 mt-1">₹5,150.00</div>
+        <div class="text-xl font-bold text-zinc-900 mt-1">$5,150.00</div>
         <div class="text-[11px] text-zinc-500 mt-0.5">Due within the next 14 days</div>
       </Card.Root>
 
       <Card.Root class="bg-white border-zinc-200/80 shadow-xs rounded-xl overflow-hidden p-4">
         <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Collected This Month</div>
-        <div class="text-xl font-bold text-emerald-600 mt-1">₹14,200.00</div>
+        <div class="text-xl font-bold text-emerald-600 mt-1">$14,200.00</div>
         <div class="text-[11px] text-zinc-500 mt-0.5">8 invoices successfully closed</div>
       </Card.Root>
     </div>

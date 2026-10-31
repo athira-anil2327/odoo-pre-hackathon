@@ -587,7 +587,7 @@
             <Receipt class="w-4 h-4 text-white" />
           </div>
           <div>
-            <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">₹18,450.00</div>
+            <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">$18,450.00</div>
             <div class="text-xs font-medium text-teal-100/90 mt-1">Total Invoiced</div>
             <div class="text-[11px] text-teal-200/80 mt-1">+12.5% vs last month</div>
           </div>
@@ -599,7 +599,7 @@
             <CheckCircle2 class="w-4 h-4 text-white" />
           </div>
           <div>
-            <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">₹14,702.50</div>
+            <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">$14,702.50</div>
             <div class="text-xs font-medium text-teal-100/90 mt-1">Collected</div>
             <div class="text-[11px] text-teal-200/80 mt-1">+8.2% vs last month</div>
           </div>
@@ -611,7 +611,7 @@
             <Clock class="w-4 h-4 text-white" />
           </div>
           <div>
-            <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">₹3,747.50</div>
+            <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">$3,747.50</div>
             <div class="text-xs font-medium text-teal-100/90 mt-1">Outstanding</div>
             <div class="text-[11px] text-teal-200/80 mt-1">4 invoices pending</div>
           </div>
@@ -623,7 +623,7 @@
             <AlertCircle class="w-4 h-4 text-white" />
           </div>
           <div>
-            <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">₹1,540.00</div>
+            <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">$1,540.00</div>
             <div class="text-xs font-medium text-teal-100/90 mt-1">Overdue</div>
             <div class="text-[11px] text-teal-200/80 mt-1">1 invoice requires attention</div>
           </div>
@@ -1114,7 +1114,7 @@
         </div>
 
         <div class="space-y-1">
-          <label for="inv-amt" class="font-medium text-[#171923]">Invoice Total Amount (₹) *</label>
+          <label for="inv-amt" class="font-medium text-[#171923]">Invoice Total Amount ($) *</label>
           <Input id="inv-amt" type="number" value="3499.00" class="h-8 text-xs" />
         </div>
 

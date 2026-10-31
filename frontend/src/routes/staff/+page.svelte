@@ -28,7 +28,7 @@
     },
     {
       title: "Open Quotations",
-      value: "₹38,200.00",
+      value: "$38,200.00",
       sub: "6 proposals in review",
       icon: FileText,
       color: "text-[#183f42]",
@@ -36,7 +36,7 @@
     },
     {
       title: "Receivables Follow-up",
-      value: "₹4,250.00",
+      value: "$4,250.00",
       sub: "4 overdue accounts",
       icon: Receipt,
       color: "text-amber-600",
@@ -45,7 +45,7 @@
     {
       title: "Renewals This Week",
       value: "3 Accounts",
-      sub: "₹18,400.00 value",
+      sub: "$18,400.00 value",
       icon: Clock,
       color: "text-emerald-600",
       bg: "bg-emerald-50"
@@ -71,7 +71,7 @@
     },
     {
       id: 3,
-      title: "Confirm payment receipt of ₹1,850.00 for INV-2026-003",
+      title: "Confirm payment receipt of $1,850.00 for INV-2026-003",
       company: "Starlight Media",
       due: "Tomorrow, 11:00 AM",
       priority: "Low",
@@ -84,7 +84,7 @@
       id: "QT-2026-088",
       customer: "CloudSphere AI",
       plan: "Enterprise Suite",
-      amount: "₹12,400.00",
+      amount: "$12,400.00",
       status: "Sent",
       statusColor: "bg-indigo-50 text-indigo-700 border-indigo-200"
     },
@@ -92,7 +92,7 @@
       id: "QT-2026-089",
       customer: "BioSynth Labs",
       plan: "Growth Cloud",
-      amount: "₹6,800.00",
+      amount: "$6,800.00",
       status: "In Review",
       statusColor: "bg-amber-50 text-amber-700 border-amber-200"
     },
@@ -100,7 +100,7 @@
       id: "QT-2026-090",
       customer: "Apex Global Tech",
       plan: "Seat Expansion (x10)",
-      amount: "₹4,500.00",
+      amount: "$4,500.00",
       status: "Draft",
       statusColor: "bg-zinc-100 text-zinc-700 border-zinc-200"
     },
@@ -108,7 +108,7 @@
       id: "QT-2026-091",
       customer: "Acme Logistics",
       plan: "Standard Cloud",
-      amount: "₹14,500.00",
+      amount: "$14,500.00",
       status: "Accepted",
       statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200"
     }

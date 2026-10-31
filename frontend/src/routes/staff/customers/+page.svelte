@@ -25,7 +25,7 @@
       email: "sarah.j@apextech.io",
       phone: "+1 (555) 432-8921",
       plan: "Enterprise Suite",
-      mrr: "₹4,200/mo",
+      mrr: "$4,200/mo",
       status: "Active",
       health: "Healthy",
       healthColor: "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -37,7 +37,7 @@
       email: "liam@cloudsphere.ai",
       phone: "+1 (555) 871-2390",
       plan: "Growth Cloud",
-      mrr: "₹2,800/mo",
+      mrr: "$2,800/mo",
       status: "Active",
       health: "Renewal Due",
       healthColor: "bg-amber-50 text-amber-700 border-amber-200"
@@ -49,7 +49,7 @@
       email: "evelyn@biosynth.org",
       phone: "+1 (555) 654-1188",
       plan: "Research Plus",
-      mrr: "₹3,400/mo",
+      mrr: "$3,400/mo",
       status: "Active",
       health: "Overdue Inv",
       healthColor: "bg-rose-50 text-rose-700 border-rose-200"
@@ -61,7 +61,7 @@
       email: "alex@starlightmedia.com",
       phone: "+1 (555) 321-7764",
       plan: "Starter Cloud",
-      mrr: "₹950/mo",
+      mrr: "$950/mo",
       status: "Active",
       health: "Healthy",
       healthColor: "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -73,7 +73,7 @@
       email: "maya.r@vanguard.com",
       phone: "+1 (555) 902-3341",
       plan: "Enterprise Suite",
-      mrr: "₹5,600/mo",
+      mrr: "$5,600/mo",
       status: "Active",
       health: "Healthy",
       healthColor: "bg-emerald-50 text-emerald-700 border-emerald-200"

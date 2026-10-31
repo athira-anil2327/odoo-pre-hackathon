@@ -14,22 +14,55 @@
     Shield,
     Repeat,
     LogOut,
-    CheckCircle2
+    CheckCircle2,
+    Briefcase,
+    Plus,
+    X,
+    UserPlus
   } from "lucide-svelte";
+
+  let showAddStaffModal = $state(false);
+  let staffName = $state("");
+  let staffEmail = $state("");
+  let staffPhone = $state("");
+  let staffSuccessMessage = $state("");
+
+  // Demo staff directory
+  let staffMembers = $state([
+    { id: "STF-1", name: "Sarah Jenkins", email: "sales@brightloop.io", phone: "+1 (555) 100-0002", role: "Staff Operations" },
+    { id: "STF-2", name: "Marcus Brody", email: "marcus.b@brightloop.io", phone: "+1 (555) 100-0003", role: "Staff Operations" }
+  ]);
 
   function handleSignOut() {
     logout();
     goto("/signin");
   }
+
+  function handleCreateStaff() {
+    if (!staffName || !staffEmail) return;
+    const newStaff = {
+      id: `STF-${staffMembers.length + 1}`,
+      name: staffName,
+      email: staffEmail,
+      phone: staffPhone || "+1 (555) 000-0000",
+      role: "Staff Operations"
+    };
+    staffMembers = [...staffMembers, newStaff];
+    staffSuccessMessage = `Staff account created for ${staffName} (${staffEmail}) with role 'staff'!`;
+    staffName = "";
+    staffEmail = "";
+    staffPhone = "";
+    showAddStaffModal = false;
+  }
 </script>
 
-<AppShell title="Account & Profile Details">
+<AppShell title="Account & Organization">
   <div class="space-y-6 max-w-4xl">
     <!-- Header -->
     <div class="flex items-center justify-between pb-4 border-b border-[#edf2f3]">
       <div>
-        <h2 class="text-base font-bold text-[#122b2e] tracking-tight">Profile & Organization Details</h2>
-        <p class="text-xs text-[#7e9599] mt-0.5">Manage your enterprise account, contact information, and role credentials.</p>
+        <h2 class="text-base font-bold text-[#122b2e] tracking-tight">Profile &amp; RBAC Control</h2>
+        <p class="text-xs text-[#7e9599] mt-0.5">Manage authenticated credentials, enterprise details, and staff account provisioning.</p>
       </div>
       <Button
         variant="outline"
@@ -40,6 +73,18 @@
         <LogOut class="w-3.5 h-3.5" /> Sign Out
       </Button>
     </div>
+
+    {#if staffSuccessMessage}
+      <div class="p-3 bg-[#e6f4f2] border border-[#bde4df] text-[#143e42] text-xs rounded-xl flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <CheckCircle2 class="w-4 h-4 shrink-0 text-[#143e42]" />
+          <span>{staffSuccessMessage}</span>
+        </div>
+        <button onclick={() => (staffSuccessMessage = "")} class="text-[#143e42]">
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+    {/if}
 
     <!-- Profile Overview Card -->
     <Card.Root class="bg-white border-[#edf2f3] shadow-xs rounded-2xl relative overflow-hidden">
@@ -53,106 +98,90 @@
             <div class="flex items-center gap-2">
               <h3 class="text-base font-bold text-[#122b2e]">{$currentUser.name}</h3>
               <span class="inline-flex items-center text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-[#e6f4f2] text-[#143e42] border border-[#bde4df]">
-                {$currentUser.status}
+                Active
               </span>
             </div>
             <div class="text-xs text-[#586f73] font-medium">{$currentUser.role} • {$currentUser.company}</div>
-            <div class="text-[11px] text-[#8c9ba5]">Customer ID: {$currentUser.customerId}</div>
+            <div class="text-[11px] text-[#8c9ba5]">Email: {$currentUser.email}</div>
           </div>
         </div>
       </Card.Content>
     </Card.Root>
 
-    <!-- Details Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Personal Details -->
-      <Card.Root class="bg-white border-[#edf2f3] shadow-xs rounded-2xl">
-        <Card.Header class="pb-3 border-b border-[#f4f7f8]">
-          <Card.Title class="text-xs font-bold text-[#122b2e] uppercase tracking-wider flex items-center gap-2">
-            <User class="w-4 h-4 text-[#183f42]" /> Personal Information
-          </Card.Title>
-        </Card.Header>
-        <Card.Content class="space-y-3.5 text-xs pt-4">
-          <div class="space-y-1">
-            <Label class="text-xs text-[#586f73] font-medium">Full Name</Label>
-            <Input type="text" value={$currentUser.name} class="h-9 text-xs bg-[#f8fafb] border-[#e5ecee] focus:border-[#183f42] focus:ring-1 focus:ring-[#183f42]/20 rounded-xl" />
-          </div>
-
-          <div class="space-y-1">
-            <Label class="text-xs text-[#586f73] font-medium">Work Email</Label>
-            <Input type="email" value={$currentUser.email} class="h-9 text-xs bg-[#f8fafb] border-[#e5ecee] focus:border-[#183f42] focus:ring-1 focus:ring-[#183f42]/20 rounded-xl" />
-          </div>
-
-          <div class="space-y-1">
-            <Label class="text-xs text-[#586f73] font-medium">Phone Number</Label>
-            <Input type="text" value={$currentUser.phone} class="h-9 text-xs bg-[#f8fafb] border-[#e5ecee] focus:border-[#183f42] focus:ring-1 focus:ring-[#183f42]/20 rounded-xl" />
-          </div>
-
-          <div class="space-y-1">
-            <Label class="text-xs text-[#586f73] font-medium">Account Role</Label>
-            <Input type="text" value={$currentUser.role} disabled class="h-9 text-xs bg-zinc-100 text-zinc-500 rounded-xl" />
-          </div>
-
-          <div class="pt-2">
-            <Button size="xs" class="bg-[#183f42] hover:bg-[#123033] text-white text-xs font-semibold rounded-xl shadow-xs">
-              Save Personal Changes
-            </Button>
-          </div>
-        </Card.Content>
-      </Card.Root>
-
-      <!-- Organization & Subscription Details -->
-      <Card.Root class="bg-white border-[#edf2f3] shadow-xs rounded-2xl">
-        <Card.Header class="pb-3 border-b border-[#f4f7f8]">
-          <Card.Title class="text-xs font-bold text-[#122b2e] uppercase tracking-wider flex items-center gap-2">
-            <Building2 class="w-4 h-4 text-[#183f42]" /> Organization & Subscription
-          </Card.Title>
-        </Card.Header>
-        <Card.Content class="space-y-3.5 text-xs pt-4">
-          <div class="space-y-1">
-            <Label class="text-xs text-[#586f73] font-medium">Company Name</Label>
-            <Input type="text" value={$currentUser.company} class="h-9 text-xs bg-[#f8fafb] border-[#e5ecee] focus:border-[#183f42] focus:ring-1 focus:ring-[#183f42]/20 rounded-xl" />
-          </div>
-
-          <div class="space-y-1">
-            <Label class="text-xs text-[#586f73] font-medium">Active Subscription Plan</Label>
-            <div class="p-3 bg-[#f8fafb] border border-[#e8eff0] rounded-xl flex items-center justify-between">
-              <span class="font-semibold text-[#122b2e]">{$currentUser.plan}</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#e6f4f2] text-[#143e42] border border-[#bde4df]">
-                {$currentUser.billingCycle}
+    <!-- Admin-Only Staff Account Management (Scene 1 Requirement) -->
+    <Card.Root class="bg-white border-[#edf2f3] shadow-xs rounded-2xl">
+      <Card.Header class="pb-3 border-b border-[#f4f7f8] flex flex-row items-center justify-between">
+        <Card.Title class="text-xs font-bold text-[#122b2e] uppercase tracking-wider flex items-center gap-2">
+          <Shield class="w-4 h-4 text-[#183f42]" /> Internal Staff Accounts (Admin-Only RBAC)
+        </Card.Title>
+        <Button
+          onclick={() => (showAddStaffModal = true)}
+          size="xs"
+          class="bg-[#183f42] hover:bg-[#123033] text-white text-xs rounded-xl gap-1 shadow-xs"
+        >
+          <UserPlus class="w-3.5 h-3.5" /> Add Staff Member
+        </Button>
+      </Card.Header>
+      <Card.Content class="pt-4 space-y-2 text-xs">
+        <p class="text-[#7e9599] text-[11px] mb-3">
+          Only the Admin persona has permission to provision Internal Staff accounts (<code>POST /api/users/staff</code>).
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {#each staffMembers as stf}
+            <div class="p-3 bg-[#f8fafb] border border-[#e5ecee] rounded-xl flex items-center justify-between">
+              <div>
+                <div class="font-bold text-[#122b2e] flex items-center gap-1.5">
+                  <Briefcase class="w-3.5 h-3.5 text-[#183f42]" />
+                  <span>{stf.name}</span>
+                </div>
+                <div class="text-[11px] text-[#7e9599] mt-0.5">{stf.email} • {stf.phone}</div>
+              </div>
+              <span class="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                Staff
               </span>
             </div>
-          </div>
-
-          <div class="space-y-1">
-            <Label class="text-xs text-[#586f73] font-medium">Security & Authentication</Label>
-            <div class="p-3 bg-[#f8fafb] border border-[#e8eff0] rounded-xl flex items-center justify-between text-[11px]">
-              <span class="flex items-center gap-1.5 text-emerald-700 font-medium">
-                <CheckCircle2 class="w-3.5 h-3.5" /> Two-Factor Enabled
-              </span>
-              <Button variant="ghost" size="xs" class="h-6 text-[11px] p-1 text-[#586f73] hover:text-[#183f42]">
-                Configure
-              </Button>
-            </div>
-          </div>
-
-          <div class="space-y-1">
-            <Label class="text-xs text-[#586f73] font-medium">API Tokens</Label>
-            <div class="p-3 bg-[#f8fafb] border border-[#e8eff0] rounded-xl flex items-center justify-between text-[11px]">
-              <span class="font-mono text-[#586f73]">prod_live_9920...</span>
-              <Button variant="ghost" size="xs" class="h-6 text-[11px] p-1 text-[#586f73] hover:text-[#183f42]">
-                Regenerate
-              </Button>
-            </div>
-          </div>
-
-          <div class="pt-2">
-            <Button variant="outline" size="xs" class="text-xs border-[#e2eaeb] text-[#586f73] hover:bg-[#f8fafb] rounded-xl">
-              Update Organization
-            </Button>
-          </div>
-        </Card.Content>
-      </Card.Root>
-    </div>
+          {/each}
+        </div>
+      </Card.Content>
+    </Card.Root>
   </div>
 </AppShell>
+
+<!-- MODAL: ADD STAFF ACCOUNT (ADMIN ONLY) -->
+{#if showAddStaffModal}
+  <div class="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-zinc-200 shadow-xl max-w-sm w-full p-5 text-xs animate-in fade-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-100 mb-3">
+        <div class="flex items-center gap-2">
+          <UserPlus class="w-4 h-4 text-[#183f42]" />
+          <h3 class="font-bold text-[#122b2e]">Provision Staff Account</h3>
+        </div>
+        <button onclick={() => (showAddStaffModal = false)} class="p-1 rounded text-zinc-400 hover:text-zinc-600">
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <Label for="s-name" class="font-medium text-[#122b2e]">Staff Member Name *</Label>
+          <Input id="s-name" bind:value={staffName} placeholder="e.g. Alex Morgan" class="h-9 text-xs mt-1" />
+        </div>
+
+        <div>
+          <Label for="s-email" class="font-medium text-[#122b2e]">Work Email *</Label>
+          <Input id="s-email" type="email" bind:value={staffEmail} placeholder="alex.m@brightloop.io" class="h-9 text-xs mt-1" />
+        </div>
+
+        <div>
+          <Label for="s-phone" class="font-medium text-[#122b2e]">Phone Number</Label>
+          <Input id="s-phone" bind:value={staffPhone} placeholder="+1 (555) 100-0004" class="h-9 text-xs mt-1" />
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-4 border-t border-zinc-100 mt-4">
+        <Button variant="outline" size="xs" onclick={() => (showAddStaffModal = false)} class="rounded-xl">Cancel</Button>
+        <Button size="xs" onclick={handleCreateStaff} class="bg-[#183f42] text-white rounded-xl">Provision Account</Button>
+      </div>
+    </div>
+  </div>
+{/if}

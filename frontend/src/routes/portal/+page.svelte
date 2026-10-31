@@ -1,331 +1,228 @@
 <script>
   import AppShell from "$lib/components/layout/AppShell.svelte";
   import * as Card from "$lib/components/ui/card/index.js";
+  import * as Table from "$lib/components/ui/table/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
+  import { currentUser } from "$lib/stores/auth.js";
+  import {
+    subscriptionsStore,
+    customersStore,
+    pauseSubscription,
+    resumeSubscription
+  } from "$lib/stores/coreManagement.js";
   import {
     Repeat,
     Receipt,
     CreditCard,
-    Download,
     CheckCircle2,
     AlertCircle,
-    ArrowUpRight,
-    Users,
+    Calendar,
+    Clock,
+    DollarSign,
+    Pause,
+    Play,
     ShieldCheck,
+    Check,
     X,
-    Check
+    Building2,
+    Mail,
+    Phone
   } from "lucide-svelte";
 
   let showPayModal = $state(false);
   let isPaymentSuccess = $state(false);
+  let actionMessage = $state("");
 
-  let recentInvoices = $state([
-    {
-      id: "INV-2026-004",
-      period: "Oct 2026 Billing",
-      date: "Oct 01, 2026",
-      amount: "₹1,540.00",
-      status: "Overdue",
-      statusColor: "bg-rose-50 text-rose-700 border-rose-200"
-    },
-    {
-      id: "INV-2026-002",
-      period: "Sep 2026 Billing",
-      date: "Sep 01, 2026",
-      amount: "₹4,200.00",
-      status: "Paid",
-      statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200"
-    },
-    {
-      id: "INV-2026-001",
-      period: "Aug 2026 Billing",
-      date: "Aug 01, 2026",
-      amount: "₹4,200.00",
-      status: "Paid",
-      statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200"
+  // Find linked customer profile and their subscriptions
+  const currentCustomer = $derived(
+    $customersStore.find(c => c.email.toLowerCase() === ($currentUser.email || "").toLowerCase()) ||
+    $customersStore[0]
+  );
+
+  const mySubscriptions = $derived(
+    currentCustomer
+      ? $subscriptionsStore.filter(s => s.customer_id === currentCustomer.id)
+      : []
+  );
+
+  const activeSubscription = $derived(
+    mySubscriptions.find(s => s.status === "Active") || mySubscriptions[0]
+  );
+
+  function handleCustomerPause(subId) {
+    try {
+      pauseSubscription(subId, "Self-service pause requested by customer");
+      actionMessage = "Subscription paused. Billing cycle suspended.";
+    } catch (e) {
+      actionMessage = e.message;
     }
-  ]);
+  }
 
-  function handleSettlePayment() {
-    isPaymentSuccess = true;
-    setTimeout(() => {
-      recentInvoices = recentInvoices.map(i => {
-        if (i.id === "INV-2026-004") {
-          return {
-            ...i,
-            status: "Paid",
-            statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200"
-          };
-        }
-        return i;
-      });
-      showPayModal = false;
-      isPaymentSuccess = false;
-    }, 1200);
+  function handleCustomerResume(subId) {
+    try {
+      resumeSubscription(subId, "Self-service resume requested by customer");
+      actionMessage = "Subscription resumed. Service is active.";
+    } catch (e) {
+      actionMessage = e.message;
+    }
   }
 </script>
 
-<AppShell title="Client Billing & Subscription Portal">
+<AppShell title="Customer Self-Service Portal">
   <div class="space-y-6">
     <!-- Portal Welcome Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-[#edf2f3] gap-4">
       <div>
         <div class="flex items-center gap-2">
-          <h2 class="text-xl font-bold text-zinc-900 tracking-tight">Apex Global Technologies</h2>
+          <h2 class="text-base font-bold text-[#122b2e] tracking-tight">{currentCustomer?.company || "My Enterprise Account"}</h2>
           <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#e6f4f2] text-[#143e42] border border-[#bde4df] uppercase">
-            Client Self-Service
+            Client Portal
           </span>
         </div>
-        <p class="text-xs text-zinc-500 mt-1">
-          Account ID: CUST-1001 • Primary Billing Contact: Sarah Jenkins
+        <p class="text-xs text-[#7e9599] mt-0.5">
+          Customer ID: <b>{currentCustomer?.customer_number}</b> • Contact: {currentCustomer?.name} ({currentCustomer?.email})
         </p>
       </div>
 
-      <div class="flex items-center gap-2.5">
-        <a href="/portal/subscriptions">
-          <Button variant="outline" size="sm" class="text-xs h-8 border-zinc-200 text-zinc-700 hover:bg-zinc-50">
-            <Repeat class="w-3.5 h-3.5 mr-1 text-zinc-400" /> Plan Details
-          </Button>
-        </a>
-        <a href="/portal/payment-methods">
-          <Button size="sm" class="bg-[#183f42] text-white shadow-xs text-xs h-8">
-            <CreditCard class="w-3.5 h-3.5 mr-1" /> Payment Settings
+      <div class="flex items-center gap-2">
+        <a href="/subscriptions">
+          <Button variant="outline" size="xs" class="text-xs border-[#e2eaeb] text-[#586f73] hover:bg-[#f8fafb] rounded-xl gap-1">
+            <Repeat class="w-3.5 h-3.5 text-[#183f42]" /> All Subscriptions
           </Button>
         </a>
       </div>
     </div>
 
-    <!-- Outstanding Balance Alert (Conditional) -->
-    {#if recentInvoices.some(i => i.status === "Overdue")}
-      <div class="p-4 rounded-xl bg-rose-50/70 border border-rose-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
-            <AlertCircle class="w-5 h-5" />
-          </div>
+    {#if actionMessage}
+      <div class="p-3.5 rounded-xl bg-[#e6f4f2] border border-[#bde4df] text-[#143e42] text-xs flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <CheckCircle2 class="w-4 h-4 shrink-0 text-[#143e42]" />
+          <span>{actionMessage}</span>
+        </div>
+        <button onclick={() => (actionMessage = "")} class="text-[#143e42]">
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+    {/if}
+
+    <!-- Active Subscription Card -->
+    {#if activeSubscription}
+      <Card.Root class="bg-white border-[#edf2f3] shadow-xs rounded-2xl overflow-hidden">
+        <div class="p-5 border-b border-[#edf2f3] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h4 class="text-xs font-bold text-rose-900">Unpaid Invoice Balance: ₹1,540.00</h4>
-            <p class="text-[11px] text-rose-700/80 mt-0.5">
-              Invoice INV-2026-004 is overdue since Oct 15, 2026. Please settle to prevent service disruption.
+            <span class="text-[10px] font-bold text-[#8c9ba5] uppercase tracking-wider">Current Active Plan</span>
+            <div class="flex items-center gap-2 mt-1">
+              <h3 class="text-lg font-bold text-[#122b2e]">{activeSubscription.plan_name}</h3>
+              <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-[#e6f4f2] text-[#143e42] border border-[#bde4df]">
+                {activeSubscription.status}
+              </span>
+            </div>
+            <p class="text-xs text-[#7e9599] mt-1">
+              Contract #{activeSubscription.subscription_number} • Billed {activeSubscription.billing_frequency}
             </p>
           </div>
+
+          <!-- Customer Self-Service Actions -->
+          <div class="flex items-center gap-2">
+            {#if activeSubscription.status === "Active"}
+              <Button
+                onclick={() => handleCustomerPause(activeSubscription.id)}
+                variant="outline"
+                size="xs"
+                class="text-xs border-amber-300 text-amber-800 hover:bg-amber-50 rounded-xl gap-1"
+              >
+                <Pause class="w-3.5 h-3.5" /> Pause Plan
+              </Button>
+            {:else if activeSubscription.status === "Paused"}
+              <Button
+                onclick={() => handleCustomerResume(activeSubscription.id)}
+                size="xs"
+                class="text-xs bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl gap-1"
+              >
+                <Play class="w-3.5 h-3.5" /> Resume Plan
+              </Button>
+            {/if}
+          </div>
         </div>
-        <Button
-          size="sm"
-          onclick={() => (showPayModal = true)}
-          class="bg-[#183f42] text-white shadow-xs text-xs h-8 shrink-0"
-        >
-          Pay Balance Now
-        </Button>
-      </div>
+
+        <!-- Key Dates & Pricing Banner -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#edf2f3] p-4 bg-[#f8fafb] text-xs">
+          <div class="p-3">
+            <div class="text-[#7e9599] text-[11px] flex items-center gap-1.5">
+              <Calendar class="w-3.5 h-3.5 text-[#183f42]" /> Next Billing Date
+            </div>
+            <div class="text-sm font-bold text-[#122b2e] mt-1">
+              {activeSubscription.next_billing_date || "—"}
+            </div>
+          </div>
+
+          <div class="p-3">
+            <div class="text-[#7e9599] text-[11px] flex items-center gap-1.5">
+              <Clock class="w-3.5 h-3.5 text-[#183f42]" /> Contract Expiry Date
+            </div>
+            <div class="text-sm font-bold text-[#122b2e] mt-1">
+              {activeSubscription.expiry_date || "Perpetual"}
+            </div>
+          </div>
+
+          <div class="p-3">
+            <div class="text-[#7e9599] text-[11px] flex items-center gap-1.5">
+              <DollarSign class="w-3.5 h-3.5 text-[#183f42]" /> Recurring Amount
+            </div>
+            <div class="text-base font-extrabold text-[#183f42] mt-0.5">
+              ${Number(activeSubscription.total_amount).toFixed(2)}
+              <span class="text-xs font-normal text-[#7e9599]">/{activeSubscription.billing_frequency}</span>
+            </div>
+          </div>
+        </div>
+      </Card.Root>
     {/if}
 
-    <!-- Active Subscription Overview Card -->
-    <Card.Root class="bg-white border-zinc-200/80 shadow-xs rounded-xl overflow-hidden">
-      <div class="p-5 border-b border-zinc-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Current Subscription Plan</span>
-          <div class="flex items-center gap-2 mt-1">
-            <h3 class="text-lg font-bold text-zinc-900">Enterprise Cloud Plan</h3>
-            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Active & Healthy
-            </span>
-          </div>
-          <p class="text-xs text-zinc-500 mt-1">
-            Next billing renewal scheduled on <strong class="text-zinc-800">November 28, 2026</strong> for <strong>₹4,200.00</strong>.
-          </p>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <a href="/portal/subscriptions">
-            <Button size="sm" variant="outline" class="text-xs h-8 border-zinc-200 text-zinc-700 hover:bg-zinc-50">
-              Upgrade / Change Tier
-            </Button>
-          </a>
-        </div>
-      </div>
-
-      <!-- Resource Utilization Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-zinc-100 p-4 bg-zinc-50/50 text-xs">
-        <div class="p-3">
-          <div class="flex items-center justify-between text-zinc-500 mb-1">
-            <span>Seat Allocation</span>
-            <span class="font-bold text-zinc-900">18 / 25</span>
-          </div>
-          <div class="w-full bg-zinc-200 h-1.5 rounded-full overflow-hidden">
-            <div class="bg-[#183f42] h-full rounded-full" style="width: 72%"></div>
-          </div>
-          <span class="text-[10px] text-zinc-400 mt-1 block">7 seats available</span>
-        </div>
-
-        <div class="p-3">
-          <div class="flex items-center justify-between text-zinc-500 mb-1">
-            <span>API Rate Limit</span>
-            <span class="font-bold text-zinc-900">420K / 1M</span>
-          </div>
-          <div class="w-full bg-zinc-200 h-1.5 rounded-full overflow-hidden">
-            <div class="bg-blue-600 h-full rounded-full" style="width: 42%"></div>
-          </div>
-          <span class="text-[10px] text-zinc-400 mt-1 block">Refreshes in 18 days</span>
-        </div>
-
-        <div class="p-3">
-          <div class="flex items-center justify-between text-zinc-500 mb-1">
-            <span>Storage Cloud</span>
-            <span class="font-bold text-zinc-900">140 GB / 500 GB</span>
-          </div>
-          <div class="w-full bg-zinc-200 h-1.5 rounded-full overflow-hidden">
-            <div class="bg-emerald-600 h-full rounded-full" style="width: 28%"></div>
-          </div>
-          <span class="text-[10px] text-zinc-400 mt-1 block">360 GB remaining</span>
-        </div>
-      </div>
-    </Card.Root>
-
-    <!-- Recent Invoices & Receipts -->
-    <Card.Root class="bg-white border-zinc-200/80 shadow-xs rounded-xl overflow-hidden">
-      <div class="p-4 border-b border-zinc-100 flex items-center justify-between">
-        <div>
-          <h3 class="text-xs font-bold text-zinc-900">Billing History & Tax Receipts</h3>
-          <p class="text-[11px] text-zinc-400">Download official tax invoices and verify receipts</p>
-        </div>
-        <a href="/portal/invoices" class="text-xs font-semibold text-[#183f42] hover:text-[#143e42] flex items-center gap-1">
-          View All Invoices <ArrowUpRight class="w-3.5 h-3.5" />
-        </a>
-      </div>
-
-      <div class="overflow-x-auto">
-        <table class="w-full text-xs text-left">
-          <thead class="bg-zinc-50/80 text-zinc-500 font-semibold border-b border-zinc-200/80">
-            <tr>
-              <th class="py-3 px-4">Invoice #</th>
-              <th class="py-3 px-4">Billing Period</th>
-              <th class="py-3 px-4">Issue Date</th>
-              <th class="py-3 px-4 text-right">Amount</th>
-              <th class="py-3 px-4">Status</th>
-              <th class="py-3 px-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-zinc-100">
-            {#each recentInvoices as inv}
-              <tr class="hover:bg-zinc-50/70 transition-colors">
-                <td class="py-3 px-4 font-mono font-medium text-zinc-900">{inv.id}</td>
-                <td class="py-3 px-4 text-zinc-600">{inv.period}</td>
-                <td class="py-3 px-4 text-zinc-500">{inv.date}</td>
-                <td class="py-3 px-4 text-right font-semibold text-zinc-900">{inv.amount}</td>
-                <td class="py-3 px-4">
-                  <span class={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${inv.statusColor}`}>
-                    {inv.status}
-                  </span>
-                </td>
-                <td class="py-3 px-4 text-right">
-                  <div class="flex items-center justify-end gap-1.5">
-                    {#if inv.status === "Overdue"}
-                      <Button
-                        size="xs"
-                        onclick={() => (showPayModal = true)}
-                        class="h-7 text-[11px] bg-[#183f42] text-white shadow-xs"
-                      >
-                        Pay Now
-                      </Button>
-                    {/if}
-                    <button
-                      class="h-7 px-2 text-[11px] border border-zinc-200 rounded-md text-zinc-700 hover:bg-zinc-50 flex items-center gap-1 transition-colors"
-                      title="Download Tax PDF"
-                    >
-                      <Download class="w-3 h-3 text-zinc-400" /> PDF
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    </Card.Root>
-
-    <!-- Support & Account Manager Information -->
-    <div class="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-[#183f42] text-white flex items-center justify-center font-bold text-xs shrink-0">
-          MB
-        </div>
-        <div>
-          <h4 class="text-xs font-bold text-zinc-900">Assigned Account Executive: Marcus Brody</h4>
-          <p class="text-[11px] text-zinc-500 mt-0.5">
-            Questions regarding custom billing, contract amendments, or purchase orders? Reach out directly.
-          </p>
-        </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <a
-          href="mailto:marcus.b@brightloop.io"
-          class="px-3 py-1.5 text-xs font-semibold bg-white border border-zinc-200 rounded-lg text-zinc-700 hover:bg-zinc-50"
-        >
-          Contact Support
-        </a>
-      </div>
+    <!-- All Subscriptions for this Customer -->
+    <div class="space-y-3">
+      <h3 class="text-sm font-bold text-[#122b2e]">All Subscriptions in this Account</h3>
+      <Card.Root class="bg-white border-[#edf2f3] shadow-xs rounded-2xl overflow-hidden">
+        <Card.Content class="p-3">
+          <Table.Root>
+            <Table.Header class="text-[#8c9ba5]">
+              <Table.Row class="hover:bg-transparent border-[#edf2f3]">
+                <Table.Head class="h-9 text-xs font-semibold px-4 text-[#8c9ba5]">Subscription #</Table.Head>
+                <Table.Head class="h-9 text-xs font-semibold px-4 text-[#8c9ba5]">Plan Name</Table.Head>
+                <Table.Head class="h-9 text-xs font-semibold px-4 text-[#8c9ba5]">Cycle</Table.Head>
+                <Table.Head class="h-9 text-xs font-semibold px-4 text-[#8c9ba5]">Next Renewal</Table.Head>
+                <Table.Head class="h-9 text-xs font-semibold px-4 text-right text-[#8c9ba5]">Recurring Fee</Table.Head>
+                <Table.Head class="h-9 text-xs font-semibold px-4 text-center text-[#8c9ba5]">Status</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body class="text-xs">
+              {#each mySubscriptions as sub}
+                <Table.Row class="hover:bg-[#f8fafb] border-[#f4f7f8]">
+                  <Table.Cell class="py-3 px-4 font-bold text-[#122b2e]">{sub.subscription_number}</Table.Cell>
+                  <Table.Cell class="py-3 px-4 font-medium text-[#122b2e]">{sub.plan_name}</Table.Cell>
+                  <Table.Cell class="py-3 px-4 text-[#586f73] capitalize">{sub.billing_frequency}</Table.Cell>
+                  <Table.Cell class="py-3 px-4 text-[#7e9599]">{sub.next_billing_date || "—"}</Table.Cell>
+                  <Table.Cell class="py-3 px-4 text-right font-bold text-[#122b2e]">
+                    ${Number(sub.total_amount).toFixed(2)}
+                  </Table.Cell>
+                  <Table.Cell class="py-3 px-4 text-center">
+                    <span class={`inline-flex items-center text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${
+                      sub.status === 'Active'
+                        ? 'bg-[#e6f4f2] text-[#143e42] border-[#bde4df]'
+                        : sub.status === 'Confirmed'
+                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                        : sub.status === 'Paused'
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-zinc-100 text-zinc-600 border-zinc-200'
+                    }`}>
+                      {sub.status}
+                    </span>
+                  </Table.Cell>
+                </Table.Row>
+              {/each}
+            </Table.Body>
+          </Table.Root>
+        </Card.Content>
+      </Card.Root>
     </div>
-
-    <!-- Instant Checkout / Pay Modal -->
-    {#if showPayModal}
-      <div class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl border border-zinc-200 shadow-xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-          <div class="p-4 border-b border-zinc-100 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <CreditCard class="w-4 h-4 text-[#183f42]" />
-              <h3 class="text-sm font-bold text-zinc-900">Settle Outstanding Balance</h3>
-            </div>
-            <button onclick={() => (showPayModal = false)} class="p-1 rounded-md text-zinc-400 hover:text-zinc-600">
-              <X class="w-4 h-4" />
-            </button>
-          </div>
-
-          <div class="p-5 space-y-4 text-xs">
-            <div class="p-3 bg-zinc-50 rounded-xl border border-zinc-200/70 space-y-1">
-              <div class="flex justify-between text-zinc-500">
-                <span>Invoice:</span>
-                <span class="font-mono font-medium text-zinc-900">INV-2026-004</span>
-              </div>
-              <div class="flex justify-between text-zinc-500">
-                <span>Account:</span>
-                <span class="font-semibold text-zinc-900">Apex Global Technologies</span>
-              </div>
-              <div class="flex justify-between text-zinc-500 border-t border-zinc-200 pt-1 font-bold text-sm">
-                <span>Total Due:</span>
-                <span class="text-[#183f42]">₹1,540.00</span>
-              </div>
-            </div>
-
-            <div class="space-y-2">
-              <div class="text-zinc-600 font-medium">Payment Method:</div>
-              <div class="p-3 rounded-xl border border-[#bde4df] bg-[#e6f4f2]/40 flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                  <CreditCard class="w-4 h-4 text-[#183f42]" />
-                  <div>
-                    <div class="font-semibold text-zinc-900 text-xs">Visa ending in •••• 4242</div>
-                    <div class="text-[10px] text-zinc-500">Exp 08/28 • Default</div>
-                  </div>
-                </div>
-                <Check class="w-4 h-4 text-[#183f42]" />
-              </div>
-            </div>
-          </div>
-
-          <div class="p-4 bg-zinc-50 border-t border-zinc-100 flex items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onclick={() => (showPayModal = false)} class="text-xs h-8">
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onclick={handleSettlePayment}
-              disabled={isPaymentSuccess}
-              class="bg-[#183f42] text-white text-xs h-8 shadow-xs"
-            >
-              {isPaymentSuccess ? "Processing..." : "Pay ₹1,540.00"}
-            </Button>
-          </div>
-        </div>
-      </div>
-    {/if}
   </div>
 </AppShell>

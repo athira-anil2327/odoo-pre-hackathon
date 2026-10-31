@@ -19,7 +19,7 @@
   const plans = [
     {
       name: "Starter Cloud",
-      price: "₹1,800",
+      price: "$1,800",
       period: "/month",
       desc: "For small teams getting started",
       features: ["Up to 5 Team Seats", "Standard API Access", "Email Support", "10 GB Storage"],
@@ -27,7 +27,7 @@
     },
     {
       name: "Enterprise Suite",
-      price: "₹4,200",
+      price: "$4,200",
       period: "/month",
       desc: "Our complete platform for scaling businesses",
       features: ["Up to 25 Team Seats", "Unlimited API Calls", "24/7 Priority Support", "500 GB Storage", "SSO & SAML Auth", "Audit Logging"],
@@ -35,7 +35,7 @@
     },
     {
       name: "Dedicated Cloud",
-      price: "₹8,900",
+      price: "$8,900",
       period: "/month",
       desc: "Isolated instance with custom SLAs",
       features: ["Unlimited Team Seats", "Custom Integrations", "Dedicated Account Manager", "99.99% Uptime SLA", "Custom Backup Policies"],
@@ -96,7 +96,7 @@
 
         <div class="p-5 rounded-2xl bg-zinc-50 border border-zinc-200/70 text-right shrink-0">
           <div class="text-xs text-zinc-400">Recurring Price</div>
-          <div class="text-2xl font-bold text-zinc-900 mt-1">₹4,200.00 <span class="text-xs font-normal text-zinc-500">/mo</span></div>
+          <div class="text-2xl font-bold text-zinc-900 mt-1">$4,200.00 <span class="text-xs font-normal text-zinc-500">/mo</span></div>
           <div class="text-[11px] text-zinc-400 mt-0.5">Billed to Visa •••• 4242</div>
           <Button
             size="sm"

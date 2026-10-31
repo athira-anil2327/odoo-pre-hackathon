@@ -1,17 +1,26 @@
 <script>
   import AppShell from "$lib/components/layout/AppShell.svelte";
   import Chart from "$lib/components/Chart.svelte";
+  import { subscriptionsStore, customersStore } from "$lib/stores/coreManagement.js";
   import {
     BarChart3,
     FileText,
     Plus,
     ChevronDown,
     ArrowUpRight,
-    TrendingUp
+    TrendingUp,
+    Repeat
   } from "lucide-svelte";
 
   // Active view toggle between Invoices and Subscriptions
   let activeTab = $state("invoices");
+
+  const activeSubsCount = $derived($subscriptionsStore.filter(s => s.status === "Active").length);
+
+  function getCustomerName(customerId) {
+    const c = $customersStore.find(cust => cust.id === customerId);
+    return c ? c.company : customerId;
+  }
 
   // Chart datasets matching theme.jpeg (Teal and Coral bars)
   const mrrData = {
@@ -291,17 +300,25 @@
                   </tr>
                 {/each}
               {:else}
-                {#each subscriptions as sub}
+                {#each $subscriptionsStore as sub}
                   <tr class="hover:bg-[#fbfcfc] transition-colors">
-                    <td class="py-3.5 font-semibold text-[#122b2e]">{sub.id}</td>
-                    <td class="py-3.5 text-[#586f73]">{sub.customer}</td>
+                    <td class="py-3.5 font-semibold text-[#122b2e]">{sub.subscription_number}</td>
+                    <td class="py-3.5 text-[#586f73]">{getCustomerName(sub.customer_id)}</td>
                     <td class="py-3.5">
-                      <span class={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${sub.statusClass}`}>
+                      <span class={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
+                        sub.status === 'Active'
+                          ? 'bg-[#e6f4f2] text-[#143e42] border border-[#bde4df]'
+                          : sub.status === 'Confirmed'
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                          : sub.status === 'Paused'
+                          ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                          : 'bg-zinc-100 text-zinc-600 border border-zinc-200'
+                      }`}>
                         {sub.status}
                       </span>
                     </td>
-                    <td class="py-3.5 text-[#7e9599]">{sub.date}</td>
-                    <td class="py-3.5 text-right font-semibold text-[#122b2e]">{sub.amount}</td>
+                    <td class="py-3.5 text-[#7e9599]">{sub.start_date}</td>
+                    <td class="py-3.5 text-right font-semibold text-[#122b2e]">${Number(sub.total_amount).toFixed(2)}</td>
                   </tr>
                 {/each}
               {/if}

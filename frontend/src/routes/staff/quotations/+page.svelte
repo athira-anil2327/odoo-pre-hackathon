@@ -37,8 +37,8 @@
       customer: "CloudSphere AI",
       plan: "Enterprise Suite",
       discount: "10%",
-      subtotal: "₹12,400.00",
-      total: "₹11,160.00",
+      subtotal: "$12,400.00",
+      total: "$11,160.00",
       date: "Oct 28, 2026",
       status: "Sent",
       statusColor: "bg-indigo-50 text-indigo-700 border-indigo-200"
@@ -48,8 +48,8 @@
       customer: "BioSynth Labs",
       plan: "Growth Cloud",
       discount: "5%",
-      subtotal: "₹6,800.00",
-      total: "₹6,460.00",
+      subtotal: "$6,800.00",
+      total: "$6,460.00",
       date: "Oct 29, 2026",
       status: "In Review",
       statusColor: "bg-amber-50 text-amber-700 border-amber-200"
@@ -59,8 +59,8 @@
       customer: "Apex Global Tech",
       plan: "Seat Expansion (x10)",
       discount: "0%",
-      subtotal: "₹4,500.00",
-      total: "₹4,500.00",
+      subtotal: "$4,500.00",
+      total: "$4,500.00",
       date: "Oct 30, 2026",
       status: "Draft",
       statusColor: "bg-zinc-100 text-zinc-700 border-zinc-200"
@@ -70,8 +70,8 @@
       customer: "Acme Logistics",
       plan: "Standard Cloud",
       discount: "15%",
-      subtotal: "₹14,500.00",
-      total: "₹12,325.00",
+      subtotal: "$14,500.00",
+      total: "$12,325.00",
       date: "Oct 24, 2026",
       status: "Accepted",
       statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -84,8 +84,8 @@
       customer: customerName,
       plan: planSelected,
       discount: `${discountPct}%`,
-      subtotal: `₹${basePrice.toLocaleString()}.00`,
-      total: `₹${calculatedTotal.toLocaleString()}.00`,
+      subtotal: `$${basePrice.toLocaleString()}.00`,
+      total: `$${calculatedTotal.toLocaleString()}.00`,
       date: "Just now",
       status: requiresApproval ? "Pending Approval" : "Draft",
       statusColor: requiresApproval
@@ -204,9 +204,9 @@
             <div class="space-y-1">
               <Label class="text-zinc-700 font-medium">Subscription Package</Label>
               <select bind:value={planSelected} class="w-full h-8 px-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-xs">
-                <option value="Enterprise Suite">Enterprise Suite (₹12,400.00)</option>
-                <option value="Growth Cloud">Growth Cloud (₹6,800.00)</option>
-                <option value="Starter Cloud">Starter Cloud (₹3,200.00)</option>
+                <option value="Enterprise Suite">Enterprise Suite ($12,400.00)</option>
+                <option value="Growth Cloud">Growth Cloud ($6,800.00)</option>
+                <option value="Starter Cloud">Starter Cloud ($3,200.00)</option>
               </select>
             </div>
 
@@ -234,15 +234,15 @@
             <div class="p-3 bg-zinc-50 rounded-xl border border-zinc-200/70 space-y-1.5">
               <div class="flex justify-between text-zinc-500">
                 <span>Base Package Price:</span>
-                <span>₹{basePrice.toLocaleString()}.00</span>
+                <span>${basePrice.toLocaleString()}.00</span>
               </div>
               <div class="flex justify-between text-zinc-500">
                 <span>Discount Applied:</span>
-                <span>-₹{(basePrice * (discountPct / 100)).toLocaleString()}.00</span>
+                <span>-${(basePrice * (discountPct / 100)).toLocaleString()}.00</span>
               </div>
               <div class="flex justify-between font-bold text-zinc-900 border-t border-zinc-200 pt-1 text-sm">
                 <span>Total Quotation:</span>
-                <span class="text-[#183f42]">₹{calculatedTotal.toLocaleString()}.00</span>
+                <span class="text-[#183f42]">${calculatedTotal.toLocaleString()}.00</span>
               </div>
             </div>
           </div>
