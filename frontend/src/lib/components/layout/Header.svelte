@@ -5,14 +5,20 @@
 
   let { title = "Dashboard" } = $props();
 
-  const isPortal = $derived(page.url.pathname.startsWith('/portal') || page.url.pathname.startsWith('/customer'));
+  const isPortal = $derived(page.url.pathname.startsWith('/portal'));
   const isStaff = $derived(page.url.pathname.startsWith('/staff'));
   const isAdmin = $derived(!isPortal && !isStaff);
 
   let isCreateMenuOpen = $state(false);
 
   const activePersona = $derived(
-    isPortal
+    $currentUser?.name
+      ? {
+          name: $currentUser.name,
+          role: $currentUser.role,
+          avatar: $currentUser.avatar || $currentUser.name.slice(0, 2).toUpperCase()
+        }
+      : isPortal
       ? { name: "Apex Tech", role: "Client Portal", avatar: "AG" }
       : isStaff
       ? { name: "Marcus B.", role: "Staff Operations", avatar: "MB" }
