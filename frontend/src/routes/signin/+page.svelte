@@ -3,29 +3,28 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
-  import { login, loginWithBackend, requestPasswordReset } from "$lib/stores/auth.js";
-  import { customersStore } from "$lib/stores/coreManagement.js";
+  import { loginWithBackend, requestPasswordReset } from "$lib/stores/auth.js";
   import { goto } from "$app/navigation";
   import {
     Lock,
     Mail,
-    Sparkles,
-    Shield,
-    Briefcase,
-    UserCircle,
-    CheckCircle2,
     AlertCircle,
+    CheckCircle2,
     X,
     KeyRound,
     ArrowRight,
     Eye,
-    EyeOff
+    EyeOff,
+    ShieldCheck
   } from "lucide-svelte";
 
-  let email = $state("admin@brightloop.io");
-  let password = $state("BrightloopAdmin2026!");
+  let email = $state("");
+  let password = $state("");
   let showPassword = $state(false);
   let errorMessage = $state("");
+  let isSubmitting = $state(false);
+
+  // Forgot password modal state
   let showForgotPassword = $state(false);
   let forgotEmail = $state("");
   let forgotSuccess = $state(null);
@@ -35,63 +34,30 @@
     errorMessage = "";
     const normalized = email.toLowerCase().trim();
 
+    if (!normalized || !password) {
+      errorMessage = "Please enter both your email address and password.";
+      return;
+    }
+
+    isSubmitting = true;
+
     try {
+      // Authenticates with PostgreSQL backend via JWT
       const res = await loginWithBackend(normalized, password);
       const user = res.user;
-      if (user.role === "Administrator") {
-        goto("/");
-      } else if (user.role === "Staff Operations") {
+
+      // Strict role-based destination path
+      if (user.role === "Administrator" || user.role === "admin") {
+        goto("/admin");
+      } else if (user.role === "Staff Operations" || user.role === "staff") {
         goto("/staff");
       } else {
         goto("/portal");
       }
     } catch (err) {
-      console.warn("Backend login issue, falling back to persona login:", err.message);
-      // Role-based routing based on email domain / user profile
-      if (normalized.includes("admin")) {
-        login({
-          name: "Brightloop Admin",
-          email: normalized,
-          company: "Brightloop Software Inc.",
-          role: "Administrator",
-          avatar: "AD"
-        });
-        goto("/");
-      } else if (normalized.includes("sales") || normalized.includes("staff")) {
-        login({
-          name: "Sarah Jenkins (Staff)",
-          email: normalized,
-          company: "Brightloop Software Inc.",
-          role: "Staff Operations",
-          avatar: "SJ"
-        });
-        goto("/staff");
-      } else {
-        // Customer
-        const cust = $customersStore.find(c => c.email.toLowerCase() === normalized);
-        login({
-          name: cust ? cust.name : "Dr. Eleanor Vance",
-          email: normalized,
-          company: cust ? cust.company : "Nexus Health Systems",
-          role: "Customer Portal",
-          customerId: cust ? cust.customer_number : "CUST-1001",
-          avatar: "EV"
-        });
-        goto("/portal");
-      }
-    }
-  }
-
-  function handleSelectPersona(role) {
-    if (role === "admin") {
-      email = "admin@brightloop.io";
-      password = "BrightloopAdmin2026!";
-    } else if (role === "staff") {
-      email = "sales@brightloop.io";
-      password = "BrightloopStaff2026!";
-    } else {
-      email = "eleanor.vance@nexushealth.org";
-      password = "CustomerSecret2026!";
+      errorMessage = err.message || "Invalid email or password. Please verify your credentials.";
+    } finally {
+      isSubmitting = false;
     }
   }
 
@@ -132,10 +98,17 @@
       <Card.Header class="pb-3 pt-5">
         <Card.Title class="text-sm font-bold text-[#122b2e]">Portal Sign In</Card.Title>
         <Card.Description class="text-xs text-[#7e9599]">
-          Authenticate using RBAC credentials.
+          Enter your registered corporate credentials to access your account.
         </Card.Description>
       </Card.Header>
       <Card.Content>
+        {#if errorMessage}
+          <div class="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
+            <AlertCircle class="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+            <span class="leading-relaxed">{errorMessage}</span>
+          </div>
+        {/if}
+
         <form class="space-y-4 text-xs" onsubmit={(e) => { e.preventDefault(); handleSignIn(); }}>
           <div class="space-y-1">
             <Label for="email" class="text-xs font-medium text-[#122b2e]">Email Address</Label>
@@ -145,6 +118,7 @@
                 id="email"
                 type="email"
                 bind:value={email}
+                oninput={() => (errorMessage = "")}
                 placeholder="name@company.com"
                 class="pl-9 text-xs h-9 bg-[#f8fafb] border-[#e5ecee] focus:border-[#183f42] focus:ring-1 focus:ring-[#183f42]/20 rounded-xl"
                 required
@@ -169,6 +143,7 @@
                 id="password"
                 type={showPassword ? "text" : "password"}
                 bind:value={password}
+                oninput={() => (errorMessage = "")}
                 placeholder="••••••••"
                 class="pl-9 pr-9 text-xs h-9 bg-[#f8fafb] border-[#e5ecee] focus:border-[#183f42] focus:ring-1 focus:ring-[#183f42]/20 rounded-xl"
                 required
@@ -190,51 +165,29 @@
 
           <Button
             type="submit"
-            class="w-full bg-[#183f42] hover:bg-[#123033] text-white h-9 text-xs font-semibold rounded-xl mt-2 transition-all shadow-xs"
+            disabled={isSubmitting}
+            class="w-full bg-[#183f42] hover:bg-[#123033] text-white h-9 text-xs font-semibold rounded-xl mt-2 transition-all shadow-xs flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            Sign In
+            {#if isSubmitting}
+              <div class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <span>Signing In...</span>
+            {:else}
+              <span>Sign In</span>
+            {/if}
           </Button>
 
-          <!-- Quick RBAC Persona Selector for Hackathon Demo -->
-          <div class="pt-3 border-t border-[#edf2f3]">
-            <span class="text-[10px] font-bold text-[#8c9ba5] uppercase tracking-wider block text-center mb-2">
-              Demo Quick Persona Switcher:
-            </span>
-            <div class="grid grid-cols-3 gap-1.5">
-              <button
-                type="button"
-                onclick={() => handleSelectPersona('admin')}
-                class="px-2 py-1.5 rounded-lg border border-[#e2eaeb] bg-[#f8fafb] hover:bg-[#e6f4f2] text-[11px] font-medium text-[#183f42] flex flex-col items-center gap-1 transition-all"
-              >
-                <Shield class="w-3.5 h-3.5 text-[#183f42]" />
-                <span>Admin</span>
-              </button>
-              <button
-                type="button"
-                onclick={() => handleSelectPersona('staff')}
-                class="px-2 py-1.5 rounded-lg border border-[#e2eaeb] bg-[#f8fafb] hover:bg-[#e6f4f2] text-[11px] font-medium text-[#183f42] flex flex-col items-center gap-1 transition-all"
-              >
-                <Briefcase class="w-3.5 h-3.5 text-[#183f42]" />
-                <span>Staff</span>
-              </button>
-              <button
-                type="button"
-                onclick={() => handleSelectPersona('customer')}
-                class="px-2 py-1.5 rounded-lg border border-[#e2eaeb] bg-[#f8fafb] hover:bg-[#e6f4f2] text-[11px] font-medium text-[#183f42] flex flex-col items-center gap-1 transition-all"
-              >
-                <UserCircle class="w-3.5 h-3.5 text-[#183f42]" />
-                <span>Customer</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="text-center text-[11px] text-[#7e9599] pt-2">
+          <div class="text-center text-[11px] text-[#7e9599] pt-2 border-t border-[#edf2f3]">
             Don't have an account?
             <a href="/signup" class="font-semibold text-[#183f42] hover:underline ml-1">Sign Up</a>
           </div>
         </form>
       </Card.Content>
     </Card.Root>
+
+    <div class="mt-4 p-2.5 rounded-xl bg-white/70 border border-[#edf2f3] text-[11px] text-[#7e9599] flex items-center justify-center gap-1.5 text-center">
+      <ShieldCheck class="w-3.5 h-3.5 text-[#183f42] shrink-0" />
+      <span>Encrypted authentication secured by PostgreSQL &amp; JWT RBAC.</span>
+    </div>
   </div>
 </div>
 

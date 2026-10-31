@@ -18,11 +18,13 @@
     CreditCard
   } from "lucide-svelte";
 
-  const isPortal = $derived(page.url.pathname.startsWith('/portal'));
-  const isStaff = $derived(page.url.pathname.startsWith('/staff'));
+  const userRole = $derived($currentUser?.role || "");
+  const isAdmin = $derived(userRole === "Administrator" || userRole === "admin");
+  const isStaff = $derived(userRole === "Staff Operations" || userRole === "staff");
+  const isCustomer = $derived(!isAdmin && !isStaff);
 
   const navItems = $derived(
-    isPortal
+    isCustomer
       ? [
           { label: "Overview", href: "/portal", icon: LayoutDashboard, hasArrow: true },
           { label: "My Subscriptions", href: "/portal/subscriptions", icon: Repeat, hasArrow: true },
@@ -40,8 +42,8 @@
           { label: "My Profile", href: "/profile", icon: UserCheck, hasArrow: false }
         ]
       : [
-          { label: "Dashboard", href: "/", icon: LayoutDashboard, hasArrow: true },
-          { label: "Customers", href: "/customers", icon: Users, hasArrow: true },
+          { label: "Admin Console", href: "/admin", icon: LayoutDashboard, hasArrow: true },
+          { label: "Customer Directory", href: "/admin/customers", icon: Users, hasArrow: true },
           { label: "Quotes", href: "/quotations", icon: HeartHandshake, hasArrow: true },
           { label: "Subscriptions", href: "/subscriptions", icon: Repeat, hasArrow: true },
           { label: "Invoice & Billing", href: "/invoices", icon: FileText, hasArrow: true },
@@ -50,31 +52,13 @@
         ]
   );
 
-  const persona = $derived(
-    isPortal
-      ? {
-          name: "Apex Global Tech",
-          role: "Customer Portal",
-          email: "billing@apextech.io",
-          avatar: "AG",
-          workspaceBadge: "Portal"
-        }
-      : isStaff
-      ? {
-          name: "Marcus Brody",
-          role: "Sales & Operations",
-          email: "marcus.b@brightloop.io",
-          avatar: "MB",
-          workspaceBadge: "Staff"
-        }
-      : {
-          name: $currentUser?.name || "Dr. Eleanor Vance",
-          role: $currentUser?.role || "Enterprise Administrator",
-          email: $currentUser?.email || "eleanor.vance@nexushealth.org",
-          avatar: $currentUser?.avatar || "EV",
-          workspaceBadge: "Brand Standard"
-        }
-  );
+  const persona = $derived({
+    name: $currentUser?.name || "User",
+    role: $currentUser?.role || "Account",
+    email: $currentUser?.email || "",
+    avatar: ($currentUser?.name || "US").slice(0, 2).toUpperCase(),
+    workspaceBadge: isAdmin ? "Admin Console" : isStaff ? "Staff Operations" : "Customer Portal"
+  });
 
   const currentPath = $derived(page.url.pathname);
 
@@ -86,9 +70,9 @@
 
 <aside class="w-full md:w-60 lg:w-64 bg-white border-r border-[#eef2f3] flex flex-col justify-between shrink-0 select-none md:min-h-screen md:sticky md:top-0 md:h-screen">
   <div>
-    <!-- Logo & Brand Dropdown matching theme.jpeg -->
+    <!-- Logo & Brand Section -->
     <div class="h-20 px-6 flex items-center border-b border-[#f0f4f5]">
-      <a href="/" class="flex items-center gap-3 w-full group">
+      <a href={isAdmin ? "/admin" : isStaff ? "/staff" : "/portal"} class="flex items-center gap-3 w-full group">
         <!-- Circular/Lines geometric logo -->
         <div class="w-10 h-10 rounded-xl bg-[#183f42] text-white flex items-center justify-center shadow-xs shrink-0">
           <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -111,7 +95,7 @@
       </a>
     </div>
 
-    <!-- Navigation List matching theme.jpeg -->
+    <!-- Navigation List strictly for the authenticated role -->
     <nav class="p-4 space-y-1">
       {#each navItems as item}
         {@const active = currentPath === item.href}
@@ -138,7 +122,6 @@
 
   <!-- Bottom Area: Logout & Profile -->
   <div class="p-4 border-t border-[#f0f4f5] space-y-3">
-    <!-- Logout Button -->
     <button
       onclick={handleLogout}
       class="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-[#586f73] hover:text-rose-600 hover:bg-rose-50/70 rounded-xl transition-all"

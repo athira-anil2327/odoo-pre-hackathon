@@ -93,13 +93,9 @@ export const login = async (req, res) => {
       return errorResponse(res, "Account is disabled. Please contact administrator.", 403);
     }
 
-    const isDemoPassword = 
-      (password === "password123") ||
-      (password === "BrightloopAdmin2026!") ||
-      (password === "Admin@BrightLoop2026!") ||
-      (password === "BrightloopStaff2026!") ||
-      (password === "CustomerSecret2026!");
-    const passwordMatch = (await bcrypt.compare(password, user.password_hash)) || isDemoPassword;
+    // STRICT AUTHENTICATION: Only compare bcrypt hash of user's own password
+    // No demo password bypass, no master passwords, no cross-account password access
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
     if (!passwordMatch) {
       return errorResponse(res, "Invalid email or password.", 401);
     }
@@ -240,25 +236,41 @@ export const createStaffUser = async (req, res) => {
   const { email, password, name, role = "staff" } = req.body;
 
   if (!email || !password || !name) {
-    return errorResponse(res, "Email, password, and name are required.", 400);
+    return errorResponse(res, "Email, password, and name are required fields.", 400);
   }
 
   if (!["admin", "staff"].includes(role)) {
     return errorResponse(res, "Role must be 'staff' or 'admin'.", 400);
   }
 
+  if (password.length < 6) {
+    return errorResponse(res, "Password must be at least 6 characters long.", 400);
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+
   try {
+    // Check if email already exists
+    const existing = await pool.query(
+      "SELECT id FROM users WHERE lower(email) = lower($1)",
+      [normalizedEmail]
+    );
+
+    if (existing.rows.length > 0) {
+      return errorResponse(res, `An account with email '${normalizedEmail}' already exists.`, 409);
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const result = await pool.query(
       `INSERT INTO users (email, password_hash, name, role, is_active, is_verified)
        VALUES ($1, $2, $3, $4, TRUE, TRUE)
        RETURNING id, email, name, role, is_active, created_at;`,
-      [email.trim(), hashedPassword, name.trim(), role]
+      [normalizedEmail, hashedPassword, name.trim(), role]
     );
 
-    return successResponse(res, result.rows[0], `User with role '${role}' created successfully.`, 201);
+    return successResponse(res, result.rows[0], `Employee user with role '${role}' created successfully.`, 201);
   } catch (err) {
-    return errorResponse(res, "Failed to create user: " + err.message, 500);
+    return errorResponse(res, "Failed to create employee user: " + err.message, 500);
   }
 };
