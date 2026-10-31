@@ -9,9 +9,10 @@
     validatePasswordPolicy,
     parseCompanyFromEmail,
     requestPasswordReset,
-    login
+    login,
+    usersStore
   } from "$lib/stores/auth.js";
-  import { customersStore, addCustomer } from "$lib/stores/coreManagement.js";
+  import { customersStore, addCustomer, syncWithBackend } from "$lib/stores/coreManagement.js";
   import { authApi } from "$lib/api.js";
   import { goto } from "$app/navigation";
   import {
@@ -48,6 +49,21 @@
   let errorMessage = $state("");
   let successMessage = $state("");
   let isSubmitting = $state(false);
+
+  // Quick Demo Autofill
+  function fillDemoCustomer() {
+    const seq = Math.floor(100 + Math.random() * 900);
+    name = "Sarah Miller";
+    company = "Acme Enterprises Inc.";
+    email = `sarah.miller${seq}@acme-corp.com`;
+    phone = "+1 (555) 987-6543";
+    password = "Customer@2026Secure!";
+    confirmPassword = "Customer@2026Secure!";
+    touchedEmail = true;
+    touchedPassword = true;
+    touchedConfirm = true;
+    errorMessage = "";
+  }
 
   // Forgot Password modal state
   let showForgotPassword = $state(false);
@@ -133,7 +149,7 @@
     touchedPassword = true;
     touchedConfirm = true;
 
-    if (!name || !company || !email || !password) {
+    if (!name.trim() || !company.trim() || !email.trim() || !password) {
       errorMessage = "Please complete all mandatory corporate registration fields.";
       return;
     }
@@ -149,7 +165,7 @@
     }
 
     if (!isPasswordValid) {
-      errorMessage = "Password does not meet enterprise security requirements.";
+      errorMessage = "Password does not meet enterprise security requirements (minimum 9 characters, 1 uppercase, 1 lowercase, 1 special character).";
       return;
     }
 
@@ -161,7 +177,9 @@
     isSubmitting = true;
 
     try {
-      let customerNumber = null;
+      let assignedId = null;
+      let regUser = null;
+
       try {
         const regRes = await authApi.register({
           name: name.trim(),
@@ -173,40 +191,56 @@
         });
 
         if (regRes.success && regRes.data) {
-          const { user, customer, token } = regRes.data;
-          customerNumber = customer.customer_number;
-          if (typeof window !== "undefined") {
+          const resData = regRes.data || {};
+          regUser = resData.user || {};
+          const token = resData.token;
+          assignedId = regUser.customerNumber || regUser.customer_number || resData.customer?.customer_number;
+          if (typeof window !== "undefined" && token) {
             localStorage.setItem("bl_token", token);
           }
+        } else if (!regRes.success) {
+          throw new Error(regRes.error?.message || regRes.message || "Registration failed.");
         }
       } catch (backendErr) {
-        console.warn("Backend registration warning, proceeding with client store sync:", backendErr);
+        if (backendErr.message && (backendErr.message.includes("already exists") || backendErr.message.includes("409"))) {
+          throw backendErr;
+        }
+        console.warn("Backend registration notice, proceeding with offline synchronization:", backendErr);
       }
 
-      const result = registerCustomer({
+      if (!assignedId) {
+        assignedId = `CUST-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+      }
+
+      const sessionUser = {
+        id: regUser?.id || `USR-${Date.now()}`,
         name: name.trim(),
+        email: email.trim().toLowerCase(),
         company: company.trim(),
-        email: email.trim(),
-        password,
-        phone: phone.trim()
+        role: "Customer Portal",
+        customerId: assignedId,
+        avatar: name.trim().split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
+      };
+
+      // Add to local store if not present
+      usersStore.update(list => {
+        if (!list.some(u => u.email.toLowerCase() === sessionUser.email)) {
+          return [...list, { ...sessionUser, password }];
+        }
+        return list;
       });
 
-      const assignedId = customerNumber || result.customer.customer_number;
+      // Synchronize database records
+      syncWithBackend().catch(() => {});
 
       // Auto-login customer
-      login({
-        name: result.user.name,
-        email: result.user.email,
-        company: result.user.company,
-        role: "Customer Portal",
-        customerId: assignedId
-      });
+      login(sessionUser);
 
       successMessage = `Account created successfully! Generated Customer ID: ${assignedId}. Redirecting to your Customer Portal...`;
       
       setTimeout(() => {
         goto("/portal");
-      }, 1200);
+      }, 1000);
     } catch (err) {
       errorMessage = err.message || "Failed to create customer account.";
       isSubmitting = false;
@@ -260,10 +294,21 @@
               Sign up your organization to manage recurring subscriptions, add-ons, and invoices.
             </Card.Description>
           </div>
-          <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#e6f4f2] text-[#143e42] border border-[#bde4df]">
-            <Building2 class="w-3.5 h-3.5" />
-            B2B Portal
-          </span>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              onclick={fillDemoCustomer}
+              class="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 transition-colors shadow-2xs cursor-pointer"
+              title="Click to fill sample customer data"
+            >
+              <Sparkles class="w-3 h-3 text-emerald-600" />
+              Demo Autofill
+            </button>
+            <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#e6f4f2] text-[#143e42] border border-[#bde4df]">
+              <Building2 class="w-3.5 h-3.5" />
+              B2B Portal
+            </span>
+          </div>
         </div>
       </Card.Header>
 
@@ -282,7 +327,7 @@
           </div>
         {/if}
 
-        <form class="space-y-4 text-xs" onsubmit={(e) => { e.preventDefault(); handleSignUp(); }}>
+        <form novalidate class="space-y-4 text-xs" onsubmit={(e) => { e.preventDefault(); handleSignUp(); }}>
           
           <!-- Company & Corporate Domain Association -->
           <div class="space-y-1.5">
