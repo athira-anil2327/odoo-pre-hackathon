@@ -3,17 +3,18 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
-  import { login } from "$lib/stores/auth.js";
+  import { login, requestPasswordReset } from "$lib/stores/auth.js";
   import { customersStore } from "$lib/stores/coreManagement.js";
   import { goto } from "$app/navigation";
-  import { Lock, Mail, Sparkles, Shield, Briefcase, UserCircle, CheckCircle2, AlertCircle, X, KeyRound } from "lucide-svelte";
+  import { Lock, Mail, Sparkles, Shield, Briefcase, UserCircle, CheckCircle2, AlertCircle, X, KeyRound, ArrowRight } from "lucide-svelte";
 
   let email = $state("admin@brightloop.io");
   let password = $state("BrightloopAdmin2026!");
   let errorMessage = $state("");
   let showForgotPassword = $state(false);
   let forgotEmail = $state("");
-  let resetSuccess = $state(false);
+  let forgotSuccess = $state(null);
+  let forgotError = $state("");
 
   function handleSignIn() {
     errorMessage = "";
@@ -67,12 +68,19 @@
   }
 
   function handleSendResetLink() {
-    if (!forgotEmail) return;
-    resetSuccess = true;
-    setTimeout(() => {
-      showForgotPassword = false;
-      resetSuccess = false;
-    }, 2500);
+    forgotError = "";
+    forgotSuccess = null;
+    if (!forgotEmail) {
+      forgotError = "Please enter your registered email address.";
+      return;
+    }
+
+    try {
+      const res = requestPasswordReset(forgotEmail);
+      forgotSuccess = res;
+    } catch (err) {
+      forgotError = err.message || "Failed to dispatch password reset link.";
+    }
   }
 </script>
 
@@ -199,17 +207,69 @@
           <KeyRound class="w-4 h-4 text-[#183f42]" />
           <h3 class="font-bold text-[#122b2e]">Forgot Password</h3>
         </div>
-        <button onclick={() => (showForgotPassword = false)} class="p-1 rounded text-zinc-400 hover:text-zinc-600">
+        <button
+          onclick={() => { showForgotPassword = false; forgotSuccess = null; forgotError = ""; }}
+          class="p-1 rounded text-zinc-400 hover:text-zinc-600"
+        >
           <X class="w-4 h-4" />
         </button>
       </div>
 
-      {#if resetSuccess}
-        <div class="p-3 bg-[#e6f4f2] border border-[#bde4df] rounded-xl text-[#143e42] flex items-center gap-2 mb-2">
-          <CheckCircle2 class="w-4 h-4 shrink-0" />
-          <span>A password reset link with a secure token has been dispatched to <b>{forgotEmail}</b>.</span>
+      {#if forgotSuccess}
+        <div class="space-y-3">
+          <div class="p-3 bg-[#e6f4f2] border border-[#bde4df] rounded-xl text-[#143e42] flex items-start gap-2">
+            <CheckCircle2 class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <div>
+              <p class="font-bold">Password Reset Dispatched</p>
+              <p class="text-[11px] leading-relaxed mt-0.5">
+                A password reset link with a secure token has been dispatched to <b>{forgotSuccess.email}</b>.
+              </p>
+            </div>
+          </div>
+
+          <div class="p-2.5 bg-[#f8fafb] border border-[#e5ecee] rounded-xl space-y-1.5">
+            <div class="text-[10px] text-[#8c9ba5] font-semibold uppercase">Simulated Reset Link</div>
+            <p class="text-[10px] text-[#122b2e] break-all font-mono bg-white p-1.5 rounded border border-[#edf2f3]">
+              {forgotSuccess.resetUrl}
+            </p>
+            <div class="flex items-center gap-2 pt-1">
+              <a
+                href={forgotSuccess.resetUrl}
+                class="flex-1 bg-[#183f42] text-white hover:bg-[#123033] h-7 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 text-center"
+              >
+                <span>Open Reset Link</span>
+                <ArrowRight class="w-3 h-3" />
+              </a>
+              <Button
+                variant="outline"
+                size="xs"
+                onclick={() => navigator.clipboard.writeText(forgotSuccess.resetUrl)}
+                class="h-7 rounded-lg text-[10px]"
+              >
+                Copy
+              </Button>
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-1">
+            <Button
+              size="xs"
+              variant="outline"
+              onclick={() => { showForgotPassword = false; forgotSuccess = null; }}
+              class="rounded-lg text-xs"
+            >
+              Close
+            </Button>
+          </div>
         </div>
       {:else}
+        {#if forgotError}
+          <div class="mb-3 p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+            <AlertCircle class="w-4 h-4 shrink-0 text-rose-600" />
+            <span>{forgotError}</span>
+          </div>
+        {/if}
+
         <p class="text-[#7e9599] mb-3 leading-relaxed">
           Enter your registered email address to receive an expiring password reset token.
         </p>
@@ -224,10 +284,19 @@
           />
         </div>
         <div class="flex items-center justify-end gap-2">
-          <Button variant="outline" size="xs" onclick={() => (showForgotPassword = false)} class="rounded-xl">
+          <Button
+            variant="outline"
+            size="xs"
+            onclick={() => { showForgotPassword = false; forgotError = ""; }}
+            class="rounded-xl"
+          >
             Cancel
           </Button>
-          <Button size="xs" onclick={handleSendResetLink} class="bg-[#183f42] text-white rounded-xl">
+          <Button
+            size="xs"
+            onclick={handleSendResetLink}
+            class="bg-[#183f42] text-white rounded-xl"
+          >
             Send Reset Link
           </Button>
         </div>
