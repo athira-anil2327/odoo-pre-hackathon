@@ -2,10 +2,15 @@ import jwt from "jsonwebtoken";
 import pool from "../config/db.js";
 import { errorResponse } from "../utils/response.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "brightloop_super_secure_jwt_secret_key_2026";
+export const getJwtSecret = () => process.env.JWT_SECRET || "brightloop_super_secure_jwt_secret_key_2026";
 
 export const generateToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+  const normalizedPayload = {
+    ...payload,
+    id: payload.id || payload.userId,
+    userId: payload.userId || payload.id
+  };
+  return jwt.sign(normalizedPayload, getJwtSecret(), { expiresIn: "7d" });
 };
 
 export const requireAuth = async (req, res, next) => {
@@ -18,12 +23,13 @@ export const requireAuth = async (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    
+    const decoded = jwt.verify(token, getJwtSecret());
+    const userId = decoded.id || decoded.userId;
+
     // Fetch fresh user record
     const result = await pool.query(
       "SELECT id, email, name, role, is_active FROM users WHERE id = $1",
-      [decoded.id]
+      [userId]
     );
 
     if (result.rows.length === 0 || !result.rows[0].is_active) {

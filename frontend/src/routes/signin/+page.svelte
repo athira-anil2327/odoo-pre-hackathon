@@ -6,10 +6,25 @@
   import { login, loginWithBackend, requestPasswordReset } from "$lib/stores/auth.js";
   import { customersStore } from "$lib/stores/coreManagement.js";
   import { goto } from "$app/navigation";
-  import { Lock, Mail, Sparkles, Shield, Briefcase, UserCircle, CheckCircle2, AlertCircle, X, KeyRound, ArrowRight } from "lucide-svelte";
+  import {
+    Lock,
+    Mail,
+    Sparkles,
+    Shield,
+    Briefcase,
+    UserCircle,
+    CheckCircle2,
+    AlertCircle,
+    X,
+    KeyRound,
+    ArrowRight,
+    Eye,
+    EyeOff
+  } from "lucide-svelte";
 
   let email = $state("admin@brightloop.io");
   let password = $state("BrightloopAdmin2026!");
+  let showPassword = $state(false);
   let errorMessage = $state("");
   let showForgotPassword = $state(false);
   let forgotEmail = $state("");
@@ -152,12 +167,24 @@
               <Lock class="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 bind:value={password}
                 placeholder="••••••••"
-                class="pl-9 text-xs h-9 bg-[#f8fafb] border-[#e5ecee] focus:border-[#183f42] focus:ring-1 focus:ring-[#183f42]/20 rounded-xl"
+                class="pl-9 pr-9 text-xs h-9 bg-[#f8fafb] border-[#e5ecee] focus:border-[#183f42] focus:ring-1 focus:ring-[#183f42]/20 rounded-xl"
                 required
               />
+              <button
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                onclick={() => (showPassword = !showPassword)}
+                class="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-600 focus:outline-none transition-colors"
+              >
+                {#if showPassword}
+                  <EyeOff class="w-3.5 h-3.5" />
+                {:else}
+                  <Eye class="w-3.5 h-3.5" />
+                {/if}
+              </button>
             </div>
           </div>
 
