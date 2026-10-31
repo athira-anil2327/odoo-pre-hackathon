@@ -701,15 +701,58 @@ export function addCustomer(custData) {
 // -------------------------------------------------------------
 export function addTemplate(tmplData) {
   const id = `TMPL-${Date.now().toString().slice(-4)}`;
+  
+  const processedLines = (tmplData.lines || []).map(line => {
+    const qty = Number(line.quantity) || 1;
+    const unitPrice = Number(line.unit_price) || 0;
+    const priceExtra = Number(line.price_extra || line.variant_price_extra) || 0;
+    return {
+      product_id: line.product_id,
+      product_name: line.product_name || "Product",
+      variant_id: line.variant_id || null,
+      variant_name: line.variant_name || "None",
+      quantity: qty,
+      unit_price: unitPrice,
+      price_extra: priceExtra,
+      effective_unit_price: unitPrice + priceExtra,
+      line_total: qty * (unitPrice + priceExtra)
+    };
+  });
+
   const newTemplate = {
     id,
     name: tmplData.name,
     plan_id: tmplData.plan_id,
     validity_days: Number(tmplData.validity_days) || 30,
     description: tmplData.description || "",
-    lines: tmplData.lines || []
+    lines: processedLines
   };
+
   templatesStore.update(list => [newTemplate, ...list]);
+
+  // Persist directly to backend PostgreSQL database
+  if (browser) {
+    quotationsApi.createTemplate({
+      name: tmplData.name,
+      plan_id: tmplData.plan_id,
+      validity_days: Number(tmplData.validity_days) || 30,
+      description: tmplData.description || "",
+      lines: processedLines.map(l => ({
+        product_id: l.product_id,
+        variant_id: l.variant_id || null,
+        quantity: l.quantity,
+        unit_price: l.unit_price
+      }))
+    }).then(res => {
+      if (res && res.success && res.data) {
+        const saved = res.data;
+        templatesStore.update(list =>
+          list.map(t => t.id === id ? { ...t, id: saved.id } : t)
+        );
+      }
+    }).catch(err => console.warn("Backend quotation template persist notice:", err));
+  }
+
   return newTemplate;
 }
 
