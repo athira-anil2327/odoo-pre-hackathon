@@ -1,18 +1,25 @@
 <script>
   import { Search, Bell, HelpCircle, Plus, ChevronDown, Shield, Briefcase, UserCircle, FileText, HeartHandshake, Repeat, Package } from "lucide-svelte";
-  import { currentUser } from "$lib/stores/auth.js";
+  import { currentUser, getUserRole } from "$lib/stores/auth.js";
   import { page } from "$app/state";
 
   let { title = "Dashboard" } = $props();
 
-  const isPortal = $derived(page.url.pathname.startsWith('/portal') || page.url.pathname.startsWith('/customer'));
-  const isStaff = $derived(page.url.pathname.startsWith('/staff'));
-  const isAdmin = $derived(!isPortal && !isStaff);
+  const userRole = $derived(getUserRole($currentUser));
+  const isPortal = $derived(userRole === 'customer');
+  const isStaff = $derived(userRole === 'staff');
+  const isAdmin = $derived(userRole === 'admin');
 
   let isCreateMenuOpen = $state(false);
 
   const activePersona = $derived(
-    isPortal
+    $currentUser?.name
+      ? {
+          name: $currentUser.name,
+          role: $currentUser.role,
+          avatar: $currentUser.avatar || $currentUser.name.slice(0, 2).toUpperCase()
+        }
+      : isPortal
       ? { name: "Apex Tech", role: "Client Portal", avatar: "AG" }
       : isStaff
       ? { name: "Marcus B.", role: "Staff Operations", avatar: "MB" }
@@ -35,38 +42,10 @@
 
   <!-- Right Actions matching theme.jpeg -->
   <div class="flex items-center gap-3 sm:gap-4 shrink-0">
-    <!-- Workspace switcher badges (Desktop) -->
-    <div class="hidden xl:flex items-center bg-[#f2f7f7] p-1 rounded-full text-[11px] font-medium border border-[#dde7e8]">
-      <a
-        href="/"
-        class={`px-3 py-1 rounded-full transition-all ${
-          isAdmin
-            ? "bg-[#183f42] text-white font-semibold shadow-xs"
-            : "text-[#586f73] hover:text-[#122b2e]"
-        }`}
-      >
-        Admin
-      </a>
-      <a
-        href="/staff"
-        class={`px-3 py-1 rounded-full transition-all ${
-          isStaff
-            ? "bg-[#183f42] text-white font-semibold shadow-xs"
-            : "text-[#586f73] hover:text-[#122b2e]"
-        }`}
-      >
-        Staff
-      </a>
-      <a
-        href="/portal"
-        class={`px-3 py-1 rounded-full transition-all ${
-          isPortal
-            ? "bg-[#183f42] text-white font-semibold shadow-xs"
-            : "text-[#586f73] hover:text-[#122b2e]"
-        }`}
-      >
-        Portal
-      </a>
+    <!-- Active Workspace Role Indicator -->
+    <div class="hidden xl:flex items-center bg-[#f2f7f7] px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#183f42] border border-[#dde7e8] gap-2 shadow-xs">
+      <span class="w-2 h-2 rounded-full {isAdmin ? 'bg-emerald-500' : isStaff ? 'bg-blue-500' : 'bg-teal-600'}"></span>
+      <span>{isAdmin ? 'Admin Workspace' : isStaff ? 'Staff Operations' : 'Customer Portal'}</span>
     </div>
 
     <!-- Notification Bell -->
@@ -85,53 +64,82 @@
       <HelpCircle class="w-4 h-4" />
     </button>
 
-    <!-- Dark Teal Pill "+ Create" Button matching theme.jpeg -->
-    <div class="relative">
-      <button
-        onclick={() => (isCreateMenuOpen = !isCreateMenuOpen)}
-        class="inline-flex items-center gap-1.5 bg-[#183f42] hover:bg-[#112f31] text-white text-xs font-semibold px-4 sm:px-5 py-2.5 rounded-full shadow-xs transition-all"
-      >
-        <Plus class="w-4 h-4" />
-        <span>Create</span>
-      </button>
+    <!-- Dark Teal Pill "+ Create" Button (Admin & Staff only) -->
+    {#if !isPortal}
+      <div class="relative">
+        <button
+          onclick={() => (isCreateMenuOpen = !isCreateMenuOpen)}
+          class="inline-flex items-center gap-1.5 bg-[#183f42] hover:bg-[#112f31] text-white text-xs font-semibold px-4 sm:px-5 py-2.5 rounded-full shadow-xs transition-all"
+        >
+          <Plus class="w-4 h-4" />
+          <span>Create</span>
+        </button>
 
-      {#if isCreateMenuOpen}
-        <div class="absolute right-0 mt-2 w-48 bg-white border border-[#edf2f3] rounded-2xl shadow-xl py-2 z-50 text-xs">
-          <a
-            href="/invoices"
-            onclick={() => (isCreateMenuOpen = false)}
-            class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
-          >
-            <FileText class="w-3.5 h-3.5 text-[#183f42]" />
-            <span>Create Invoice</span>
-          </a>
-          <a
-            href="/quotations"
-            onclick={() => (isCreateMenuOpen = false)}
-            class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
-          >
-            <HeartHandshake class="w-3.5 h-3.5 text-[#183f42]" />
-            <span>Create Quote</span>
-          </a>
-          <a
-            href="/subscriptions"
-            onclick={() => (isCreateMenuOpen = false)}
-            class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
-          >
-            <Repeat class="w-3.5 h-3.5 text-[#183f42]" />
-            <span>Create Subscription</span>
-          </a>
-          <a
-            href="/products"
-            onclick={() => (isCreateMenuOpen = false)}
-            class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
-          >
-            <Package class="w-3.5 h-3.5 text-[#183f42]" />
-            <span>Create Product</span>
-          </a>
-        </div>
-      {/if}
-    </div>
+        {#if isCreateMenuOpen}
+          <div class="absolute right-0 mt-2 w-48 bg-white border border-[#edf2f3] rounded-2xl shadow-xl py-2 z-50 text-xs">
+            {#if isAdmin}
+              <a
+                href="/invoices"
+                onclick={() => (isCreateMenuOpen = false)}
+                class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
+              >
+                <FileText class="w-3.5 h-3.5 text-[#183f42]" />
+                <span>Create Invoice</span>
+              </a>
+              <a
+                href="/quotations"
+                onclick={() => (isCreateMenuOpen = false)}
+                class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
+              >
+                <HeartHandshake class="w-3.5 h-3.5 text-[#183f42]" />
+                <span>Create Quote</span>
+              </a>
+              <a
+                href="/subscriptions"
+                onclick={() => (isCreateMenuOpen = false)}
+                class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
+              >
+                <Repeat class="w-3.5 h-3.5 text-[#183f42]" />
+                <span>Create Subscription</span>
+              </a>
+              <a
+                href="/products"
+                onclick={() => (isCreateMenuOpen = false)}
+                class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
+              >
+                <Package class="w-3.5 h-3.5 text-[#183f42]" />
+                <span>Create Product</span>
+              </a>
+            {:else if isStaff}
+              <a
+                href="/staff/invoices"
+                onclick={() => (isCreateMenuOpen = false)}
+                class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
+              >
+                <FileText class="w-3.5 h-3.5 text-[#183f42]" />
+                <span>Create Invoice</span>
+              </a>
+              <a
+                href="/staff/quotations"
+                onclick={() => (isCreateMenuOpen = false)}
+                class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
+              >
+                <HeartHandshake class="w-3.5 h-3.5 text-[#183f42]" />
+                <span>Create Quote</span>
+              </a>
+              <a
+                href="/subscriptions"
+                onclick={() => (isCreateMenuOpen = false)}
+                class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
+              >
+                <Repeat class="w-3.5 h-3.5 text-[#183f42]" />
+                <span>Create Subscription</span>
+              </a>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {/if}
 
     <!-- User Profile Dropdown matching theme.jpeg -->
     <a

@@ -357,3 +357,11 @@ export function logout() {
     localStorage.removeItem("bl_current_user");
   }
 }
+
+export function getUserRole(user) {
+  if (!user || !user.role) return "guest";
+  const r = String(user.role).toLowerCase();
+  if (r.includes("admin")) return "admin";
+  if (r.includes("staff") || r.includes("sales") || r.includes("operations")) return "staff";
+  return "customer";
+}

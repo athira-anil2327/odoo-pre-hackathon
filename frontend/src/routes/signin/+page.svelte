@@ -3,7 +3,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
-  import { login, loginWithBackend, requestPasswordReset } from "$lib/stores/auth.js";
+  import { login, loginWithBackend, requestPasswordReset, getUserRole } from "$lib/stores/auth.js";
   import { customersStore } from "$lib/stores/coreManagement.js";
   import { goto } from "$app/navigation";
   import {
@@ -37,10 +37,10 @@
 
     try {
       const res = await loginWithBackend(normalized, password);
-      const user = res.user;
-      if (user.role === "Administrator") {
+      const role = getUserRole(res.user);
+      if (role === "admin") {
         goto("/");
-      } else if (user.role === "Staff Operations") {
+      } else if (role === "staff") {
         goto("/staff");
       } else {
         goto("/portal");

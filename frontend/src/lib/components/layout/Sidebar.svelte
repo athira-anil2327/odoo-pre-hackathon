@@ -1,7 +1,7 @@
 <script>
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
-  import { currentUser, logout } from "$lib/stores/auth.js";
+  import { currentUser, logout, getUserRole } from "$lib/stores/auth.js";
   import {
     LayoutDashboard,
     FileText,
@@ -18,8 +18,9 @@
     CreditCard
   } from "lucide-svelte";
 
-  const isPortal = $derived(page.url.pathname.startsWith('/portal'));
-  const isStaff = $derived(page.url.pathname.startsWith('/staff'));
+  const userRole = $derived(getUserRole($currentUser));
+  const isPortal = $derived(userRole === 'customer');
+  const isStaff = $derived(userRole === 'staff');
 
   const navItems = $derived(
     isPortal
@@ -50,31 +51,13 @@
         ]
   );
 
-  const persona = $derived(
-    isPortal
-      ? {
-          name: "Apex Global Tech",
-          role: "Customer Portal",
-          email: "billing@apextech.io",
-          avatar: "AG",
-          workspaceBadge: "Portal"
-        }
-      : isStaff
-      ? {
-          name: "Marcus Brody",
-          role: "Sales & Operations",
-          email: "marcus.b@brightloop.io",
-          avatar: "MB",
-          workspaceBadge: "Staff"
-        }
-      : {
-          name: $currentUser?.name || "Dr. Eleanor Vance",
-          role: $currentUser?.role || "Enterprise Administrator",
-          email: $currentUser?.email || "eleanor.vance@nexushealth.org",
-          avatar: $currentUser?.avatar || "EV",
-          workspaceBadge: "Brand Standard"
-        }
-  );
+  const persona = $derived({
+    name: $currentUser?.name || (userRole === "admin" ? "Brightloop Admin" : userRole === "staff" ? "Staff Operations" : "Customer Portal"),
+    role: $currentUser?.role || (userRole === "admin" ? "Administrator" : userRole === "staff" ? "Staff Operations" : "Customer Portal"),
+    email: $currentUser?.email || "",
+    avatar: $currentUser?.avatar || ($currentUser?.name ? $currentUser.name.slice(0, 2).toUpperCase() : "AD"),
+    workspaceBadge: userRole === "admin" ? "Administrator" : userRole === "staff" ? "Staff Operations" : "Customer Portal"
+  });
 
   const currentPath = $derived(page.url.pathname);
 
