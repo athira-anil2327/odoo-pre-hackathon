@@ -7,10 +7,6 @@
     FileText,
     HeartHandshake,
     Repeat,
-    Gauge,
-    CalendarClock,
-    ScrollText,
-    RotateCcw,
     Settings,
     LogOut,
     ChevronRight,
@@ -19,13 +15,10 @@
     Package,
     Receipt,
     UserCheck,
-    CreditCard,
-    Briefcase,
-    Shield,
-    UserCircle
+    CreditCard
   } from "lucide-svelte";
 
-  const isPortal = $derived(page.url.pathname.startsWith('/portal') || page.url.pathname.startsWith('/customer'));
+  const isPortal = $derived(page.url.pathname.startsWith('/portal'));
   const isStaff = $derived(page.url.pathname.startsWith('/staff'));
 
   const navItems = $derived(
@@ -33,7 +26,7 @@
       ? [
           { label: "Overview", href: "/portal", icon: LayoutDashboard, hasArrow: true },
           { label: "My Subscriptions", href: "/portal/subscriptions", icon: Repeat, hasArrow: true },
-          { label: "Invoices & Receipts", href: "/portal/invoices", icon: Receipt, hasArrow: true },
+          { label: "Invoice & Billing", href: "/portal/invoices", icon: Receipt, hasArrow: true },
           { label: "Payment Methods", href: "/portal/payment-methods", icon: CreditCard, hasArrow: false },
           { label: "Account Profile", href: "/profile", icon: UserCheck, hasArrow: false }
         ]
@@ -42,19 +35,17 @@
           { label: "Staff Dashboard", href: "/staff", icon: LayoutDashboard, hasArrow: true },
           { label: "Customers", href: "/staff/customers", icon: Users, hasArrow: true },
           { label: "Quotations", href: "/staff/quotations", icon: FileText, hasArrow: true },
-          { label: "Invoices", href: "/staff/invoices", icon: Receipt, hasArrow: true },
+          { label: "Invoice & Billing", href: "/staff/invoices", icon: Receipt, hasArrow: true },
           { label: "Subscriptions", href: "/subscriptions", icon: Repeat, hasArrow: true },
           { label: "My Profile", href: "/profile", icon: UserCheck, hasArrow: false }
         ]
       : [
           { label: "Dashboard", href: "/", icon: LayoutDashboard, hasArrow: true },
-          { label: "Invoices", href: "/invoices", icon: FileText, hasArrow: true },
+          { label: "Customers", href: "/customers", icon: Users, hasArrow: true },
           { label: "Quotes", href: "/quotations", icon: HeartHandshake, hasArrow: true },
           { label: "Subscriptions", href: "/subscriptions", icon: Repeat, hasArrow: true },
-          { label: "Usage & Meters", href: "/products", icon: Gauge, hasArrow: true },
-          { label: "Billing Schedules", href: "/invoices", icon: CalendarClock, hasArrow: false },
-          { label: "Contracts", href: "/subscriptions", icon: ScrollText, hasArrow: false },
-          { label: "Revenue Recovery", href: "/customers", icon: RotateCcw, hasArrow: false },
+          { label: "Invoice & Billing", href: "/invoices", icon: FileText, hasArrow: true },
+          { label: "Products", href: "/products", icon: Package, hasArrow: true },
           { label: "Settings", href: "/profile", icon: Settings, hasArrow: false }
         ]
   );
