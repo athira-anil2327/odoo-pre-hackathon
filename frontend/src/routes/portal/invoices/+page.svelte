@@ -3,6 +3,7 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
+  import { invoicesStore, recordPayment } from "$lib/stores/invoices.js";
   import {
     Receipt,
     Download,
@@ -21,58 +22,58 @@
   let selectedInvoice = $state(null);
   let isPaying = $state(false);
 
-  let invoices = $state([
-    {
-      id: "INV-2026-004",
-      period: "October 2026 Billing",
-      issueDate: "Oct 01, 2026",
-      dueDate: "Oct 15, 2026",
-      subtotal: "$1,400.00",
-      tax: "$140.00",
-      amount: "$1,540.00",
-      status: "Overdue",
-      statusColor: "bg-rose-50 text-rose-700 border-rose-200"
-    },
-    {
-      id: "INV-2026-003",
-      period: "September 2026 Billing",
-      issueDate: "Sep 01, 2026",
-      dueDate: "Sep 15, 2026",
-      subtotal: "$3,818.18",
-      tax: "$381.82",
-      amount: "$4,200.00",
-      status: "Paid",
-      statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200"
-    },
-    {
-      id: "INV-2026-002",
-      period: "August 2026 Billing",
-      issueDate: "Aug 01, 2026",
-      dueDate: "Aug 15, 2026",
-      subtotal: "$3,818.18",
-      tax: "$381.82",
-      amount: "$4,200.00",
-      status: "Paid",
-      statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200"
-    },
-    {
-      id: "INV-2026-001",
-      period: "July 2026 Billing",
-      issueDate: "Jul 01, 2026",
-      dueDate: "Jul 15, 2026",
-      subtotal: "$3,818.18",
-      tax: "$381.82",
-      amount: "$4,200.00",
-      status: "Paid",
-      statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200"
-    }
-  ]);
+  function formatAmount(val) {
+    const num = Number(val) || 0;
+    return `₹${num.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  // ONLY invoices where payment is pending are shown in the customer portal
+  const pendingInvoices = $derived(
+    $invoicesStore
+      .filter(i => {
+        const hasPendingAmount = Number(i.outstanding_amount) > 0;
+        const isNotCancelled = i.status !== "cancelled";
+        const isNotPaid = i.status !== "paid";
+        return hasPendingAmount && isNotCancelled && isNotPaid;
+      })
+      .map(i => {
+        const isOverdue = i.due_date && i.due_date < todayStr;
+        const status = isOverdue ? "Overdue" : "Pending";
+        const statusColor = isOverdue
+          ? "bg-rose-50 text-rose-700 border-rose-200"
+          : "bg-amber-50 text-amber-700 border-amber-200";
+
+        const periodLabel = i.lines?.[0]?.product_name
+          ? `${i.lines[0].product_name} Billing`
+          : i.billing_period_start
+          ? `${i.billing_period_start} Billing`
+          : "Monthly Billing";
+
+        return {
+          id: i.invoice_number || i.id,
+          rawId: i.id,
+          period: periodLabel,
+          issueDate: i.invoice_date || todayStr,
+          dueDate: i.due_date || todayStr,
+          subtotal: formatAmount(i.subtotal),
+          tax: formatAmount(i.tax_total),
+          amount: formatAmount(i.outstanding_amount),
+          rawAmount: Number(i.outstanding_amount),
+          status,
+          statusColor
+        };
+      })
+  );
 
   const filteredInvoices = $derived(
-    invoices.filter(i => {
-      const matchesSearch = i.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            i.period.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === "All" || i.status === statusFilter;
+    pendingInvoices.filter(i => {
+      const matchesSearch =
+        i.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        i.period.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus =
+        statusFilter === "All" || i.status.toLowerCase() === statusFilter.toLowerCase();
       return matchesSearch && matchesStatus;
     })
   );
@@ -86,20 +87,21 @@
     isPaying = true;
     setTimeout(() => {
       if (selectedInvoice) {
-        invoices = invoices.map(i => {
-          if (i.id === selectedInvoice.id) {
-            return {
-              ...i,
-              status: "Paid",
-              statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200"
-            };
-          }
-          return i;
-        });
+        try {
+          recordPayment({
+            invoiceId: selectedInvoice.rawId || selectedInvoice.id,
+            amount: selectedInvoice.rawAmount,
+            paymentMethod: "credit_card",
+            referenceNumber: `CC-PORTAL-${Math.floor(100000 + Math.random() * 900000)}`,
+            note: "Customer online portal payment settlement"
+          });
+        } catch (e) {
+          console.warn("Payment error:", e);
+        }
       }
       isPaying = false;
       showPayModal = false;
-    }, 1200);
+    }, 1000);
   }
 
   function handleDownloadReceipt(invId) {
@@ -145,7 +147,7 @@
           class="h-8 px-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-700 focus:outline-none"
         >
           <option value="All">All Invoices</option>
-          <option value="Paid">Paid</option>
+          <option value="Pending">Pending</option>
           <option value="Overdue">Overdue</option>
         </select>
       </div>
@@ -168,41 +170,47 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-zinc-100">
-            {#each filteredInvoices as inv}
-              <tr class="hover:bg-zinc-50/70 transition-colors">
-                <td class="py-3 px-4 font-mono font-medium text-zinc-900">{inv.id}</td>
-                <td class="py-3 px-4 font-semibold text-zinc-800">{inv.period}</td>
-                <td class="py-3 px-4 text-zinc-500">{inv.issueDate}</td>
-                <td class="py-3 px-4 text-zinc-500">{inv.dueDate}</td>
-                <td class="py-3 px-4 text-right text-zinc-500">{inv.tax}</td>
-                <td class="py-3 px-4 text-right font-semibold text-zinc-900">{inv.amount}</td>
-                <td class="py-3 px-4">
-                  <span class={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${inv.statusColor}`}>
-                    {inv.status}
-                  </span>
+            {#if filteredInvoices.length === 0}
+              <tr>
+                <td colspan="8" class="py-8 text-center text-zinc-400">
+                  No pending invoices found. All payments are up to date!
                 </td>
-                <td class="py-3 px-4 text-right">
-                  <div class="flex items-center justify-end gap-1.5">
-                    {#if inv.status === "Overdue"}
+              </tr>
+            {:else}
+              {#each filteredInvoices as inv}
+                <tr class="hover:bg-zinc-50/70 transition-colors">
+                  <td class="py-3 px-4 font-mono font-medium text-zinc-900">{inv.id}</td>
+                  <td class="py-3 px-4 font-semibold text-zinc-800">{inv.period}</td>
+                  <td class="py-3 px-4 text-zinc-500">{inv.issueDate}</td>
+                  <td class="py-3 px-4 text-zinc-500">{inv.dueDate}</td>
+                  <td class="py-3 px-4 text-right text-zinc-500">{inv.tax}</td>
+                  <td class="py-3 px-4 text-right font-semibold text-zinc-900">{inv.amount}</td>
+                  <td class="py-3 px-4">
+                    <span class={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${inv.statusColor}`}>
+                      {inv.status}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 text-right">
+                    <div class="flex items-center justify-end gap-1.5">
                       <Button
                         size="xs"
                         onclick={() => openPayModal(inv)}
-                        class="h-7 text-[11px] bg-[#183f42] text-white shadow-xs"
+                        class="h-7 text-[11px] bg-[#183f42] hover:bg-[#123033] text-white shadow-xs"
                       >
                         Pay Now
                       </Button>
-                    {/if}
-                    <button
-                      onclick={() => handleDownloadReceipt(inv.id)}
-                      class="h-7 px-2.5 text-[11px] border border-zinc-200 rounded-md text-zinc-700 hover:bg-zinc-50 flex items-center gap-1 transition-colors"
-                      title="Download PDF"
-                    >
-                      <Download class="w-3 h-3 text-zinc-400" /> PDF
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            {/each}
+                      <button
+                        onclick={() => handleDownloadReceipt(inv.id)}
+                        class="h-7 px-2.5 text-[11px] border border-zinc-200 rounded-md text-zinc-700 hover:bg-zinc-50 flex items-center gap-1 transition-colors"
+                        title="Download PDF"
+                      >
+                        <Download class="w-3 h-3 text-zinc-400" /> PDF
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              {/each}
+            {/if}
           </tbody>
         </table>
       </div>
@@ -258,7 +266,7 @@
               size="sm"
               onclick={handleProcessPayment}
               disabled={isPaying}
-              class="bg-[#183f42] text-white text-xs h-8 shadow-xs"
+              class="bg-[#183f42] hover:bg-[#123033] text-white text-xs h-8 shadow-xs"
             >
               {isPaying ? "Processing..." : `Confirm & Pay ${selectedInvoice.amount}`}
             </Button>
