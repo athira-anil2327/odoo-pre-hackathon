@@ -111,7 +111,7 @@
       <Button
         onclick={() => (showCreateModal = true)}
         size="sm"
-        class="gradient-magenta text-white glow-magenta-xs text-xs h-8"
+        class="bg-[#183f42] text-white shadow-xs text-xs h-8"
       >
         <Plus class="w-3.5 h-3.5 mr-1" /> Create Quotation
       </Button>
@@ -164,7 +164,7 @@
                     <button class="p-1 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors" title="View Proposal">
                       <Eye class="w-3.5 h-3.5" />
                     </button>
-                    <button class="p-1 rounded text-zinc-400 hover:text-fuchsia-600 hover:bg-fuchsia-50 transition-colors" title="Send to Customer">
+                    <button class="p-1 rounded text-zinc-400 hover:text-[#183f42] hover:bg-[#e6f4f2]/60 transition-colors" title="Send to Customer">
                       <Send class="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -182,7 +182,7 @@
         <div class="bg-white rounded-2xl border border-zinc-200 shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           <div class="p-4 border-b border-zinc-100 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <FileText class="w-4 h-4 text-fuchsia-600" />
+              <FileText class="w-4 h-4 text-[#183f42]" />
               <h3 class="text-sm font-bold text-zinc-900">Draft New Quotation</h3>
             </div>
             <button onclick={() => (showCreateModal = false)} class="p-1 rounded-md text-zinc-400 hover:text-zinc-600">
@@ -221,7 +221,7 @@
                 max="30"
                 step="5"
                 bind:value={discountPct}
-                class="w-full accent-fuchsia-600 cursor-pointer"
+                class="w-full accent-[#183f42] cursor-pointer"
               />
               {#if requiresApproval}
                 <div class="p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] flex items-center gap-1.5 mt-1.5">
@@ -242,7 +242,7 @@
               </div>
               <div class="flex justify-between font-bold text-zinc-900 border-t border-zinc-200 pt-1 text-sm">
                 <span>Total Quotation:</span>
-                <span class="text-fuchsia-600">₹{calculatedTotal.toLocaleString()}.00</span>
+                <span class="text-[#183f42]">₹{calculatedTotal.toLocaleString()}.00</span>
               </div>
             </div>
           </div>
@@ -251,7 +251,7 @@
             <Button variant="outline" size="sm" onclick={() => (showCreateModal = false)} class="text-xs h-8">
               Cancel
             </Button>
-            <Button size="sm" onclick={handleSaveQuote} class="gradient-magenta text-white text-xs h-8 glow-magenta-xs">
+            <Button size="sm" onclick={handleSaveQuote} class="bg-[#183f42] text-white text-xs h-8 shadow-xs">
               Save & Create
             </Button>
           </div>

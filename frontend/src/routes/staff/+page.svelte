@@ -31,8 +31,8 @@
       value: "₹38,200.00",
       sub: "6 proposals in review",
       icon: FileText,
-      color: "text-fuchsia-600",
-      bg: "bg-fuchsia-50"
+      color: "text-[#183f42]",
+      bg: "bg-[#e6f4f2]"
     },
     {
       title: "Receivables Follow-up",
@@ -142,7 +142,7 @@
           </Button>
         </a>
         <a href="/staff/quotations">
-          <Button size="sm" class="gradient-magenta text-white glow-magenta-xs text-xs h-8">
+          <Button size="sm" class="bg-[#183f42] text-white shadow-xs text-xs h-8">
             <Plus class="w-3.5 h-3.5 mr-1" /> New Quotation
           </Button>
         </a>
@@ -174,7 +174,7 @@
       <Card.Root class="bg-white border-zinc-200/80 shadow-xs rounded-xl overflow-hidden">
         <div class="p-4 border-b border-zinc-100 flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <CheckCircle2 class="w-4 h-4 text-fuchsia-600" />
+            <CheckCircle2 class="w-4 h-4 text-[#183f42]" />
             <span class="text-xs font-bold text-zinc-900">Today's Priority Action Items</span>
           </div>
           <span class="text-[10px] font-semibold text-zinc-400">{tasks.filter(t => !t.done).length} Pending</span>
@@ -186,7 +186,7 @@
                 type="checkbox"
                 checked={task.done}
                 onchange={() => toggleTask(task.id)}
-                class="mt-0.5 rounded text-fuchsia-600 focus:ring-fuchsia-400 h-4 w-4 border-zinc-300"
+                class="mt-0.5 rounded text-[#183f42] focus:ring-[#183f42]/20 h-4 w-4 border-zinc-300"
               />
               <div class="flex-1 min-w-0">
                 <p class={`text-xs font-medium leading-snug ${task.done ? 'line-through text-zinc-400' : 'text-zinc-800'}`}>
@@ -215,7 +215,7 @@
             <h3 class="text-xs font-bold text-zinc-900">Assigned Quotations & Proposals</h3>
             <p class="text-[11px] text-zinc-400">Proposals currently under review by clients</p>
           </div>
-          <a href="/staff/quotations" class="text-xs font-semibold text-fuchsia-600 hover:text-fuchsia-700 flex items-center gap-1">
+          <a href="/staff/quotations" class="text-xs font-semibold text-[#183f42] hover:text-[#143e42] flex items-center gap-1">
             View All <ArrowUpRight class="w-3.5 h-3.5" />
           </a>
         </div>

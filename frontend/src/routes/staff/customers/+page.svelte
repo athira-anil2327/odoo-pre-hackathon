@@ -102,7 +102,7 @@
       </div>
 
       <a href="/staff/quotations">
-        <Button size="sm" class="gradient-magenta text-white glow-magenta-xs text-xs h-8">
+        <Button size="sm" class="bg-[#183f42] text-white shadow-xs text-xs h-8">
           <FileText class="w-3.5 h-3.5 mr-1" /> Draft New Quote
         </Button>
       </a>
@@ -124,7 +124,7 @@
         <span class="text-xs text-zinc-400">Health:</span>
         <select
           bind:value={selectedHealth}
-          class="h-8 px-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-700 focus:outline-none focus:ring-1 focus:ring-fuchsia-400"
+          class="h-8 px-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-700 focus:outline-none focus:ring-1 focus:ring-[#183f42]/20"
         >
           <option value="All">All Health States</option>
           <option value="Healthy">Healthy</option>

@@ -4,20 +4,26 @@
   import { currentUser, logout } from "$lib/stores/auth.js";
   import {
     LayoutDashboard,
+    FileText,
+    HeartHandshake,
+    Repeat,
+    Gauge,
+    CalendarClock,
+    ScrollText,
+    RotateCcw,
+    Settings,
+    LogOut,
+    ChevronRight,
+    ChevronDown,
     Users,
     Package,
-    FileText,
-    Repeat,
     Receipt,
     UserCheck,
     CreditCard,
-    LogOut,
-    Sparkles,
     Briefcase,
     Shield,
     UserCircle
   } from "lucide-svelte";
-  import { Separator } from "$lib/components/ui/separator/index.js";
 
   const isPortal = $derived(page.url.pathname.startsWith('/portal') || page.url.pathname.startsWith('/customer'));
   const isStaff = $derived(page.url.pathname.startsWith('/staff'));
@@ -25,28 +31,31 @@
   const navItems = $derived(
     isPortal
       ? [
-          { label: "My Overview", href: "/portal", icon: LayoutDashboard },
-          { label: "My Subscriptions", href: "/portal/subscriptions", icon: Repeat },
-          { label: "Invoices & Receipts", href: "/portal/invoices", icon: Receipt },
-          { label: "Payment Methods", href: "/portal/payment-methods", icon: CreditCard },
-          { label: "Account Profile", href: "/profile", icon: UserCheck }
+          { label: "Overview", href: "/portal", icon: LayoutDashboard, hasArrow: true },
+          { label: "My Subscriptions", href: "/portal/subscriptions", icon: Repeat, hasArrow: true },
+          { label: "Invoices & Receipts", href: "/portal/invoices", icon: Receipt, hasArrow: true },
+          { label: "Payment Methods", href: "/portal/payment-methods", icon: CreditCard, hasArrow: false },
+          { label: "Account Profile", href: "/profile", icon: UserCheck, hasArrow: false }
         ]
       : isStaff
       ? [
-          { label: "Staff Overview", href: "/staff", icon: LayoutDashboard },
-          { label: "Assigned Customers", href: "/staff/customers", icon: Users },
-          { label: "Quotations", href: "/staff/quotations", icon: FileText },
-          { label: "Invoices & Billing", href: "/staff/invoices", icon: Receipt },
-          { label: "My Profile", href: "/profile", icon: UserCheck }
+          { label: "Staff Dashboard", href: "/staff", icon: LayoutDashboard, hasArrow: true },
+          { label: "Customers", href: "/staff/customers", icon: Users, hasArrow: true },
+          { label: "Quotations", href: "/staff/quotations", icon: FileText, hasArrow: true },
+          { label: "Invoices", href: "/staff/invoices", icon: Receipt, hasArrow: true },
+          { label: "Subscriptions", href: "/subscriptions", icon: Repeat, hasArrow: true },
+          { label: "My Profile", href: "/profile", icon: UserCheck, hasArrow: false }
         ]
       : [
-          { label: "Overview", href: "/", icon: LayoutDashboard },
-          { label: "Customers", href: "/customers", icon: Users },
-          { label: "Products & Plans", href: "/products", icon: Package },
-          { label: "Quotations", href: "/quotations", icon: FileText },
-          { label: "Subscriptions", href: "/subscriptions", icon: Repeat },
-          { label: "Invoices & Billing", href: "/invoices", icon: Receipt },
-          { label: "Profile & Account", href: "/profile", icon: UserCheck }
+          { label: "Dashboard", href: "/", icon: LayoutDashboard, hasArrow: true },
+          { label: "Invoices", href: "/invoices", icon: FileText, hasArrow: true },
+          { label: "Quotes", href: "/quotations", icon: HeartHandshake, hasArrow: true },
+          { label: "Subscriptions", href: "/subscriptions", icon: Repeat, hasArrow: true },
+          { label: "Usage & Meters", href: "/products", icon: Gauge, hasArrow: true },
+          { label: "Billing Schedules", href: "/invoices", icon: CalendarClock, hasArrow: false },
+          { label: "Contracts", href: "/subscriptions", icon: ScrollText, hasArrow: false },
+          { label: "Revenue Recovery", href: "/customers", icon: RotateCcw, hasArrow: false },
+          { label: "Settings", href: "/profile", icon: Settings, hasArrow: false }
         ]
   );
 
@@ -54,11 +63,10 @@
     isPortal
       ? {
           name: "Apex Global Tech",
-          role: "Client Account",
+          role: "Customer Portal",
           email: "billing@apextech.io",
           avatar: "AG",
-          workspaceBadge: "Customer Portal",
-          badgeColor: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200/60"
+          workspaceBadge: "Portal"
         }
       : isStaff
       ? {
@@ -66,16 +74,14 @@
           role: "Sales & Operations",
           email: "marcus.b@brightloop.io",
           avatar: "MB",
-          workspaceBadge: "Staff Workspace",
-          badgeColor: "bg-blue-50 text-blue-700 border-blue-200/60"
+          workspaceBadge: "Staff"
         }
       : {
-          name: $currentUser.name,
-          role: $currentUser.role,
-          email: $currentUser.email,
-          avatar: $currentUser.avatar,
-          workspaceBadge: "Enterprise Admin",
-          badgeColor: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200/60"
+          name: $currentUser?.name || "Dr. Eleanor Vance",
+          role: $currentUser?.role || "Enterprise Administrator",
+          email: $currentUser?.email || "eleanor.vance@nexushealth.org",
+          avatar: $currentUser?.avatar || "EV",
+          workspaceBadge: "Brand Standard"
         }
   );
 
@@ -87,81 +93,67 @@
   }
 </script>
 
-<aside class="w-64 bg-white/90 backdrop-blur-md border-r border-zinc-200/80 h-screen sticky top-0 flex flex-col justify-between shrink-0 select-none shadow-[1px_0_10px_rgba(0,0,0,0.02)]">
+<aside class="w-full md:w-60 lg:w-64 bg-white border-r border-[#eef2f3] flex flex-col justify-between shrink-0 select-none">
   <div>
-    <!-- Brand with Gradient Accent -->
-    <div class="h-16 border-b border-zinc-100 flex items-center px-5 gap-3">
-      <div class="w-9 h-9 rounded-xl gradient-magenta flex items-center justify-center text-white font-bold text-sm glow-magenta-xs shadow-sm">
-        <Sparkles class="w-4 h-4 text-white" />
-      </div>
-      <div>
-        <div class="font-bold text-sm tracking-tight text-zinc-900 leading-none flex items-center gap-1.5">
-          <span>Brightloop</span>
-          <span class={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border uppercase ${persona.badgeColor}`}>
-            {persona.workspaceBadge.split(' ')[0]}
+    <!-- Logo & Brand Dropdown matching theme.jpeg -->
+    <div class="h-20 px-6 flex items-center border-b border-[#f0f4f5]">
+      <a href="/" class="flex items-center gap-3 w-full group">
+        <!-- Circular/Lines geometric logo -->
+        <div class="w-10 h-10 rounded-xl bg-[#183f42] text-white flex items-center justify-center shadow-xs shrink-0">
+          <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-dasharray="2 3" />
+            <path d="M7 12h10" />
+            <path d="M9 8h6" />
+            <path d="M9 16h6" />
+          </svg>
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-sm tracking-tight text-[#122b2e]">Brightloop</span>
+            <ChevronDown class="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-600 transition-colors" />
+          </div>
+          <span class="text-[11px] text-[#789094] block truncate">
+            {persona.workspaceBadge}
           </span>
         </div>
-        <div class="text-[10px] text-zinc-400 font-medium tracking-wider uppercase mt-1">
-          {persona.workspaceBadge}
-        </div>
-      </div>
+      </a>
     </div>
 
-    <!-- Navigation List -->
-    <div class="p-3.5 space-y-1">
-      <div class="px-3 pb-1.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-        <span>{isPortal ? 'Client Portal' : isStaff ? 'Sales & Ops' : 'Admin Console'}</span>
-        {#if isPortal}
-          <UserCircle class="w-3 h-3 text-zinc-400" />
-        {:else if isStaff}
-          <Briefcase class="w-3 h-3 text-zinc-400" />
-        {:else}
-          <Shield class="w-3 h-3 text-zinc-400" />
-        {/if}
-      </div>
+    <!-- Navigation List matching theme.jpeg -->
+    <nav class="p-4 space-y-1">
       {#each navItems as item}
         {@const active = currentPath === item.href}
         {@const Icon = item.icon}
         <a
           href={item.href}
-          class={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 ${
+          class={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition-all duration-150 ${
             active
-              ? "gradient-magenta text-white font-semibold glow-magenta-xs shadow-sm"
-              : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70"
+              ? "bg-[#e6f4f2] text-[#143e42] font-semibold"
+              : "text-[#586f73] hover:text-[#122b2e] hover:bg-[#f6f9fa] font-medium"
           }`}
         >
-          <Icon class={`w-4 h-4 ${active ? 'text-white' : 'text-zinc-400'}`} />
-          <span>{item.label}</span>
+          <div class="flex items-center gap-3">
+            <Icon class={`w-4 h-4 ${active ? 'text-[#143e42]' : 'text-[#7e9599]'}`} />
+            <span>{item.label}</span>
+          </div>
+          {#if item.hasArrow}
+            <ChevronRight class={`w-3.5 h-3.5 ${active ? 'text-[#143e42]' : 'text-zinc-300'}`} />
+          {/if}
         </a>
       {/each}
-    </div>
+    </nav>
   </div>
 
-  <!-- Bottom Account Card & Sign Out -->
-  <div class="p-4 border-t border-zinc-100 bg-gradient-to-b from-white to-zinc-50/70 space-y-2.5">
-    <a
-      href="/profile"
-      class="flex items-center gap-3 p-2 rounded-xl bg-white border border-zinc-200/80 shadow-xs hover:border-fuchsia-300 transition-all group"
-      title="View Profile Details"
-    >
-      <div class="w-8 h-8 rounded-lg gradient-magenta text-white flex items-center justify-center text-xs font-bold shrink-0">
-        {persona.avatar}
-      </div>
-      <div class="truncate flex-1 min-w-0">
-        <div class="text-xs font-semibold text-zinc-900 truncate group-hover:text-fuchsia-600 transition-colors">
-          {persona.name}
-        </div>
-        <div class="text-[10px] text-zinc-400 truncate">
-          {persona.role}
-        </div>
-      </div>
-    </a>
-
+  <!-- Bottom Area: Logout & Profile -->
+  <div class="p-4 border-t border-[#f0f4f5] space-y-3">
+    <!-- Logout Button -->
     <button
       onclick={handleLogout}
-      class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-rose-600 hover:bg-rose-50 border border-zinc-200/70 hover:border-rose-200 rounded-lg transition-all"
+      class="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-[#586f73] hover:text-rose-600 hover:bg-rose-50/70 rounded-xl transition-all"
     >
-      <LogOut class="w-3.5 h-3.5" /> Sign Out
+      <LogOut class="w-4 h-4 text-[#7e9599] group-hover:text-rose-600" />
+      <span>Logout</span>
     </button>
   </div>
 </aside>

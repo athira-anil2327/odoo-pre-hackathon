@@ -72,7 +72,7 @@
       <div>
         <div class="flex items-center gap-2">
           <h2 class="text-xl font-bold text-zinc-900 tracking-tight">Apex Global Technologies</h2>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200/60 uppercase">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#e6f4f2] text-[#143e42] border border-[#bde4df] uppercase">
             Client Self-Service
           </span>
         </div>
@@ -88,7 +88,7 @@
           </Button>
         </a>
         <a href="/portal/payment-methods">
-          <Button size="sm" class="gradient-magenta text-white glow-magenta-xs text-xs h-8">
+          <Button size="sm" class="bg-[#183f42] text-white shadow-xs text-xs h-8">
             <CreditCard class="w-3.5 h-3.5 mr-1" /> Payment Settings
           </Button>
         </a>
@@ -112,7 +112,7 @@
         <Button
           size="sm"
           onclick={() => (showPayModal = true)}
-          class="gradient-magenta text-white glow-magenta-xs text-xs h-8 shrink-0"
+          class="bg-[#183f42] text-white shadow-xs text-xs h-8 shrink-0"
         >
           Pay Balance Now
         </Button>
@@ -152,7 +152,7 @@
             <span class="font-bold text-zinc-900">18 / 25</span>
           </div>
           <div class="w-full bg-zinc-200 h-1.5 rounded-full overflow-hidden">
-            <div class="bg-fuchsia-600 h-full rounded-full" style="width: 72%"></div>
+            <div class="bg-[#183f42] h-full rounded-full" style="width: 72%"></div>
           </div>
           <span class="text-[10px] text-zinc-400 mt-1 block">7 seats available</span>
         </div>
@@ -188,7 +188,7 @@
           <h3 class="text-xs font-bold text-zinc-900">Billing History & Tax Receipts</h3>
           <p class="text-[11px] text-zinc-400">Download official tax invoices and verify receipts</p>
         </div>
-        <a href="/portal/invoices" class="text-xs font-semibold text-fuchsia-600 hover:text-fuchsia-700 flex items-center gap-1">
+        <a href="/portal/invoices" class="text-xs font-semibold text-[#183f42] hover:text-[#143e42] flex items-center gap-1">
           View All Invoices <ArrowUpRight class="w-3.5 h-3.5" />
         </a>
       </div>
@@ -223,7 +223,7 @@
                       <Button
                         size="xs"
                         onclick={() => (showPayModal = true)}
-                        class="h-7 text-[11px] gradient-magenta text-white glow-magenta-xs"
+                        class="h-7 text-[11px] bg-[#183f42] text-white shadow-xs"
                       >
                         Pay Now
                       </Button>
@@ -246,7 +246,7 @@
     <!-- Support & Account Manager Information -->
     <div class="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl gradient-magenta text-white flex items-center justify-center font-bold text-xs shrink-0">
+        <div class="w-10 h-10 rounded-xl bg-[#183f42] text-white flex items-center justify-center font-bold text-xs shrink-0">
           MB
         </div>
         <div>
@@ -272,7 +272,7 @@
         <div class="bg-white rounded-2xl border border-zinc-200 shadow-xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           <div class="p-4 border-b border-zinc-100 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <CreditCard class="w-4 h-4 text-fuchsia-600" />
+              <CreditCard class="w-4 h-4 text-[#183f42]" />
               <h3 class="text-sm font-bold text-zinc-900">Settle Outstanding Balance</h3>
             </div>
             <button onclick={() => (showPayModal = false)} class="p-1 rounded-md text-zinc-400 hover:text-zinc-600">
@@ -292,21 +292,21 @@
               </div>
               <div class="flex justify-between text-zinc-500 border-t border-zinc-200 pt-1 font-bold text-sm">
                 <span>Total Due:</span>
-                <span class="text-fuchsia-600">₹1,540.00</span>
+                <span class="text-[#183f42]">₹1,540.00</span>
               </div>
             </div>
 
             <div class="space-y-2">
               <div class="text-zinc-600 font-medium">Payment Method:</div>
-              <div class="p-3 rounded-xl border border-fuchsia-300 bg-fuchsia-50/40 flex items-center justify-between">
+              <div class="p-3 rounded-xl border border-[#bde4df] bg-[#e6f4f2]/40 flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
-                  <CreditCard class="w-4 h-4 text-fuchsia-600" />
+                  <CreditCard class="w-4 h-4 text-[#183f42]" />
                   <div>
                     <div class="font-semibold text-zinc-900 text-xs">Visa ending in •••• 4242</div>
                     <div class="text-[10px] text-zinc-500">Exp 08/28 • Default</div>
                   </div>
                 </div>
-                <Check class="w-4 h-4 text-fuchsia-600" />
+                <Check class="w-4 h-4 text-[#183f42]" />
               </div>
             </div>
           </div>
@@ -319,7 +319,7 @@
               size="sm"
               onclick={handleSettlePayment}
               disabled={isPaymentSuccess}
-              class="gradient-magenta text-white text-xs h-8 glow-magenta-xs"
+              class="bg-[#183f42] text-white text-xs h-8 shadow-xs"
             >
               {isPaymentSuccess ? "Processing..." : "Pay ₹1,540.00"}
             </Button>

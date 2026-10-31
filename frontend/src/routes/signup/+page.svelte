@@ -5,7 +5,7 @@
   import { Label } from "$lib/components/ui/label/index.js";
   import { login } from "$lib/stores/auth.js";
   import { goto } from "$app/navigation";
-  import { Lock, Mail, User, Building2, Sparkles } from "lucide-svelte";
+  import { Lock, Mail, User, Building2 } from "lucide-svelte";
 
   let name = $state("Dr. Eleanor Vance");
   let company = $state("Nexus Health Systems");
@@ -18,32 +18,33 @@
   }
 </script>
 
-<div class="min-h-screen bg-[#fafafc] flex flex-col justify-center items-center p-4 relative overflow-hidden">
-  <!-- Subtle decorative ambient gradient blur -->
-  <div class="absolute -top-40 -left-40 w-96 h-96 bg-fuchsia-200/40 rounded-full blur-3xl pointer-events-none"></div>
-  <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-200/30 rounded-full blur-3xl pointer-events-none"></div>
-
+<div class="min-h-screen bg-[#234b4f] flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans">
   <div class="w-full max-w-sm relative z-10">
     <div class="text-center mb-6">
-      <div class="w-11 h-11 rounded-2xl gradient-magenta flex items-center justify-center text-white font-bold text-base mx-auto mb-3 glow-magenta-sm shadow-md">
-        <Sparkles class="w-5 h-5" />
+      <div class="w-12 h-12 rounded-2xl bg-[#183f42] text-white flex items-center justify-center mx-auto mb-3 shadow-md ring-2 ring-white/10">
+        <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-dasharray="2 3" />
+          <path d="M7 12h10" />
+          <path d="M9 8h6" />
+          <path d="M9 16h6" />
+        </svg>
       </div>
-      <h1 class="text-xl font-bold text-zinc-900 tracking-tight">Brightloop Software</h1>
-      <p class="text-xs text-zinc-500 mt-0.5">Register an Enterprise Account</p>
+      <h1 class="text-xl font-bold text-white tracking-tight">Brightloop Software</h1>
+      <p class="text-xs text-teal-100/70 mt-0.5">Register an Enterprise Account</p>
     </div>
 
-    <Card.Root class="bg-white/95 backdrop-blur-md border-zinc-200/80 shadow-[0_10px_30px_rgba(0,0,0,0.04)] rounded-2xl overflow-hidden">
-      <div class="h-1.5 gradient-magenta w-full"></div>
+    <Card.Root class="bg-white border-0 shadow-2xl rounded-2xl overflow-hidden">
+      <div class="h-1.5 bg-[#183f42] w-full"></div>
       <Card.Header class="pb-3 pt-5">
-        <Card.Title class="text-sm font-bold text-zinc-900">Sign Up</Card.Title>
-        <Card.Description class="text-xs text-zinc-500">
+        <Card.Title class="text-sm font-bold text-[#122b2e]">Sign Up</Card.Title>
+        <Card.Description class="text-xs text-[#7e9599]">
           Create an enterprise workspace for subscription management.
         </Card.Description>
       </Card.Header>
       <Card.Content>
         <form class="space-y-3.5 text-xs" onsubmit={(e) => { e.preventDefault(); handleSignUp(); }}>
           <div class="space-y-1">
-            <Label for="fullname" class="text-xs font-medium text-zinc-700">Full Name</Label>
+            <Label for="fullname" class="text-xs font-medium text-[#122b2e]">Full Name</Label>
             <div class="relative">
               <User class="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
               <Input
@@ -51,13 +52,13 @@
                 type="text"
                 bind:value={name}
                 placeholder="Dr. Eleanor Vance"
-                class="pl-9 text-xs h-9 bg-zinc-50/70 border-zinc-200 focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100 rounded-xl"
+                class="pl-9 text-xs h-9 bg-[#f8fafb] border-[#e5ecee] focus:border-[#183f42] focus:ring-1 focus:ring-[#183f42]/20 rounded-xl"
               />
             </div>
           </div>
 
           <div class="space-y-1">
-            <Label for="company" class="text-xs font-medium text-zinc-700">Company Name</Label>
+            <Label for="company" class="text-xs font-medium text-[#122b2e]">Company Name</Label>
             <div class="relative">
               <Building2 class="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
               <Input
@@ -65,13 +66,13 @@
                 type="text"
                 bind:value={company}
                 placeholder="Nexus Health Systems"
-                class="pl-9 text-xs h-9 bg-zinc-50/70 border-zinc-200 focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100 rounded-xl"
+                class="pl-9 text-xs h-9 bg-[#f8fafb] border-[#e5ecee] focus:border-[#183f42] focus:ring-1 focus:ring-[#183f42]/20 rounded-xl"
               />
             </div>
           </div>
 
           <div class="space-y-1">
-            <Label for="email" class="text-xs font-medium text-zinc-700">Work Email</Label>
+            <Label for="email" class="text-xs font-medium text-[#122b2e]">Work Email</Label>
             <div class="relative">
               <Mail class="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
               <Input
@@ -79,13 +80,13 @@
                 type="email"
                 bind:value={email}
                 placeholder="eleanor.vance@nexushealth.org"
-                class="pl-9 text-xs h-9 bg-zinc-50/70 border-zinc-200 focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100 rounded-xl"
+                class="pl-9 text-xs h-9 bg-[#f8fafb] border-[#e5ecee] focus:border-[#183f42] focus:ring-1 focus:ring-[#183f42]/20 rounded-xl"
               />
             </div>
           </div>
 
           <div class="space-y-1">
-            <Label for="password" class="text-xs font-medium text-zinc-700">Password</Label>
+            <Label for="password" class="text-xs font-medium text-[#122b2e]">Password</Label>
             <div class="relative">
               <Lock class="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
               <Input
@@ -93,21 +94,21 @@
                 type="password"
                 bind:value={password}
                 placeholder="••••••••"
-                class="pl-9 text-xs h-9 bg-zinc-50/70 border-zinc-200 focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100 rounded-xl"
+                class="pl-9 text-xs h-9 bg-[#f8fafb] border-[#e5ecee] focus:border-[#183f42] focus:ring-1 focus:ring-[#183f42]/20 rounded-xl"
               />
             </div>
           </div>
 
           <Button
             type="submit"
-            class="w-full gradient-magenta hover:opacity-95 text-white glow-magenta-xs h-9 text-xs font-semibold rounded-xl mt-2 transition-all shadow-xs"
+            class="w-full bg-[#183f42] hover:bg-[#123033] text-white h-9 text-xs font-semibold rounded-xl mt-2 transition-all shadow-xs"
           >
             Create Account
           </Button>
 
-          <div class="text-center text-[11px] text-zinc-500 pt-2">
+          <div class="text-center text-[11px] text-[#7e9599] pt-2">
             Already have an account?
-            <a href="/signin" class="font-semibold text-fuchsia-600 hover:text-fuchsia-700 hover:underline ml-1">Sign In</a>
+            <a href="/signin" class="font-semibold text-[#183f42] hover:underline ml-1">Sign In</a>
           </div>
         </form>
       </Card.Content>
