@@ -3,8 +3,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
-  import { login, loginWithBackend, requestPasswordReset, getUserRole } from "$lib/stores/auth.js";
-  import { customersStore } from "$lib/stores/coreManagement.js";
+  import { loginWithBackend, requestPasswordReset, getUserRole } from "$lib/stores/auth.js";
   import { goto } from "$app/navigation";
   import {
     Lock,
@@ -26,6 +25,7 @@
   let password = $state("BrightloopAdmin2026!");
   let showPassword = $state(false);
   let errorMessage = $state("");
+  let isSubmitting = $state(false);
   let showForgotPassword = $state(false);
   let forgotEmail = $state("");
   let forgotSuccess = $state(null);
@@ -33,6 +33,12 @@
 
   async function handleSignIn() {
     errorMessage = "";
+    if (!email.trim() || !password) {
+      errorMessage = "Please enter both your corporate email and password.";
+      return;
+    }
+
+    isSubmitting = true;
     const normalized = email.toLowerCase().trim();
 
     try {
@@ -46,43 +52,13 @@
         goto("/portal");
       }
     } catch (err) {
-      console.warn("Backend login issue, falling back to persona login:", err.message);
-      // Role-based routing based on email domain / user profile
-      if (normalized.includes("admin")) {
-        login({
-          name: "Brightloop Admin",
-          email: normalized,
-          company: "Brightloop Software Inc.",
-          role: "Administrator",
-          avatar: "AD"
-        });
-        goto("/");
-      } else if (normalized.includes("sales") || normalized.includes("staff")) {
-        login({
-          name: "Sarah Jenkins (Staff)",
-          email: normalized,
-          company: "Brightloop Software Inc.",
-          role: "Staff Operations",
-          avatar: "SJ"
-        });
-        goto("/staff");
-      } else {
-        // Customer
-        const cust = $customersStore.find(c => c.email.toLowerCase() === normalized);
-        login({
-          name: cust ? cust.name : "Dr. Eleanor Vance",
-          email: normalized,
-          company: cust ? cust.company : "Nexus Health Systems",
-          role: "Customer Portal",
-          customerId: cust ? cust.customer_number : "CUST-1001",
-          avatar: "EV"
-        });
-        goto("/portal");
-      }
+      errorMessage = err.message || "Invalid user ID or password. Please try again.";
+      isSubmitting = false;
     }
   }
 
   function handleSelectPersona(role) {
+    errorMessage = "";
     if (role === "admin") {
       email = "admin@brightloop.io";
       password = "BrightloopAdmin2026!";
@@ -136,7 +112,14 @@
         </Card.Description>
       </Card.Header>
       <Card.Content>
-        <form class="space-y-4 text-xs" onsubmit={(e) => { e.preventDefault(); handleSignIn(); }}>
+        {#if errorMessage}
+          <div class="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2.5 animate-in fade-in">
+            <AlertCircle class="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+            <span class="leading-relaxed font-medium">{errorMessage}</span>
+          </div>
+        {/if}
+
+        <form novalidate class="space-y-4 text-xs" onsubmit={(e) => { e.preventDefault(); handleSignIn(); }}>
           <div class="space-y-1">
             <Label for="email" class="text-xs font-medium text-[#122b2e]">Email Address</Label>
             <div class="relative">
@@ -190,9 +173,15 @@
 
           <Button
             type="submit"
-            class="w-full bg-[#183f42] hover:bg-[#123033] text-white h-9 text-xs font-semibold rounded-xl mt-2 transition-all shadow-xs"
+            disabled={isSubmitting}
+            class="w-full bg-[#183f42] hover:bg-[#123033] text-white h-9 text-xs font-semibold rounded-xl mt-2 transition-all shadow-xs flex items-center justify-center gap-2"
           >
-            Sign In
+            {#if isSubmitting}
+              <div class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <span>Signing In...</span>
+            {:else}
+              <span>Sign In</span>
+            {/if}
           </Button>
 
           <!-- Quick RBAC Persona Selector for Hackathon Demo -->
