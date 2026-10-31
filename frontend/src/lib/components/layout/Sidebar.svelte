@@ -19,16 +19,20 @@
   } from "lucide-svelte";
   import { Separator } from "$lib/components/ui/separator/index.js";
 
-  const isPortal = $derived(page.url.pathname.startsWith('/portal') || page.url.pathname.startsWith('/customer'));
+  const isCustomer = $derived(
+    page.url.pathname.startsWith('/customers') ||
+    page.url.pathname.startsWith('/customer') ||
+    page.url.pathname.startsWith('/portal')
+  );
   const isStaff = $derived(page.url.pathname.startsWith('/staff'));
 
   const navItems = $derived(
-    isPortal
+    isCustomer
       ? [
-          { label: "My Overview", href: "/portal", icon: LayoutDashboard },
-          { label: "My Subscriptions", href: "/portal/subscriptions", icon: Repeat },
-          { label: "Invoices & Receipts", href: "/portal/invoices", icon: Receipt },
-          { label: "Payment Methods", href: "/portal/payment-methods", icon: CreditCard },
+          { label: "My Overview", href: "/customers", icon: LayoutDashboard },
+          { label: "My Subscriptions", href: "/customers/subscriptions", icon: Repeat },
+          { label: "Invoices & Receipts", href: "/customers/invoices", icon: Receipt },
+          { label: "Payment Methods", href: "/customers/payment-methods", icon: CreditCard },
           { label: "Account Profile", href: "/profile", icon: UserCheck }
         ]
       : isStaff
@@ -40,8 +44,8 @@
           { label: "My Profile", href: "/profile", icon: UserCheck }
         ]
       : [
-          { label: "Overview", href: "/", icon: LayoutDashboard },
-          { label: "Customers", href: "/customers", icon: Users },
+          { label: "Overview", href: "/admin", icon: LayoutDashboard },
+          { label: "Customer Accounts", href: "/admin/customers", icon: Users },
           { label: "Products & Plans", href: "/products", icon: Package },
           { label: "Quotations", href: "/quotations", icon: FileText },
           { label: "Subscriptions", href: "/subscriptions", icon: Repeat },
@@ -51,10 +55,10 @@
   );
 
   const persona = $derived(
-    isPortal
+    isCustomer
       ? {
           name: "Apex Global Tech",
-          role: "Client Account",
+          role: "Customer Account",
           email: "billing@apextech.io",
           avatar: "AG",
           workspaceBadge: "Customer Portal",
@@ -63,7 +67,7 @@
       : isStaff
       ? {
           name: "Marcus Brody",
-          role: "Sales & Operations",
+          role: "Staff Member",
           email: "marcus.b@brightloop.io",
           avatar: "MB",
           workspaceBadge: "Staff Workspace",
@@ -110,8 +114,8 @@
     <!-- Navigation List -->
     <div class="p-3.5 space-y-1">
       <div class="px-3 pb-1.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-        <span>{isPortal ? 'Client Portal' : isStaff ? 'Sales & Ops' : 'Admin Console'}</span>
-        {#if isPortal}
+        <span>{isCustomer ? 'Customer Portal' : isStaff ? 'Staff Workspace' : 'Admin Console'}</span>
+        {#if isCustomer}
           <UserCircle class="w-3 h-3 text-zinc-400" />
         {:else if isStaff}
           <Briefcase class="w-3 h-3 text-zinc-400" />

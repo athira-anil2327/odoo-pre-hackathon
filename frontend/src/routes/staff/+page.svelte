@@ -119,13 +119,13 @@
   }
 </script>
 
-<AppShell title="Staff Operations Console">
+<AppShell title="Staff Dashboard">
   <div class="space-y-6">
     <!-- Page Header & Quick CTAs -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <div class="flex items-center gap-2">
-          <h2 class="text-xl font-bold text-zinc-900 tracking-tight">Staff Operations Briefing</h2>
+          <h2 class="text-xl font-bold text-zinc-900 tracking-tight">Staff Briefing</h2>
           <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60 uppercase">
             Sales & Support
           </span>

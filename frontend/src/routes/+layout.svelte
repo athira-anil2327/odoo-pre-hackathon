@@ -15,7 +15,7 @@
 			if (!$isAuthenticated && !isAuthPage) {
 				goto('/signin');
 			} else if ($isAuthenticated && isAuthPage) {
-				goto('/');
+				goto('/admin');
 			}
 		}
 	});

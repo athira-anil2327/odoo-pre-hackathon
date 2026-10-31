@@ -1,5 +1,5 @@
 <script>
-  import { Search, LogOut, Bell, Sparkles, Shield, Briefcase, UserCircle } from "lucide-svelte";
+  import { Search, LogOut } from "lucide-svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { currentUser, logout } from "$lib/stores/auth.js";
@@ -8,15 +8,18 @@
 
   let { title = "Dashboard" } = $props();
 
-  const isPortal = $derived(page.url.pathname.startsWith('/portal') || page.url.pathname.startsWith('/customer'));
+  const isCustomer = $derived(
+    page.url.pathname.startsWith('/customers') ||
+    page.url.pathname.startsWith('/customer') ||
+    page.url.pathname.startsWith('/portal')
+  );
   const isStaff = $derived(page.url.pathname.startsWith('/staff'));
-  const isAdmin = $derived(!isPortal && !isStaff);
 
   const activePersona = $derived(
-    isPortal
-      ? { name: "Apex Global Tech", role: "Client Portal", avatar: "AG" }
+    isCustomer
+      ? { name: "Apex Global Tech", role: "Customer Account", avatar: "AG" }
       : isStaff
-      ? { name: "Marcus Brody", role: "Sales & Operations", avatar: "MB" }
+      ? { name: "Marcus Brody", role: "Staff Operations", avatar: "MB" }
       : { name: $currentUser.name, role: $currentUser.role, avatar: $currentUser.avatar }
   );
 
@@ -27,50 +30,8 @@
 </script>
 
 <header class="h-16 border-b border-zinc-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-7 shadow-[0_1px_8px_rgba(0,0,0,0.015)]">
-  <div class="flex items-center gap-4">
+  <div class="flex items-center gap-3">
     <h1 class="text-sm font-bold text-zinc-900 tracking-tight">{title}</h1>
-
-    <!-- Dedicated URL Workspace Switcher -->
-    <div class="hidden md:flex items-center p-0.5 bg-zinc-100/80 border border-zinc-200/70 rounded-xl text-xs font-medium">
-      <a
-        href="/"
-        class={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all ${
-          isAdmin
-            ? "bg-white text-zinc-900 font-semibold shadow-xs border border-zinc-200/60"
-            : "text-zinc-500 hover:text-zinc-800"
-        }`}
-        title="Admin Workspace (/)"
-      >
-        <Shield class="w-3 h-3 text-fuchsia-600" />
-        <span>Admin</span>
-      </a>
-
-      <a
-        href="/staff"
-        class={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all ${
-          isStaff
-            ? "bg-white text-zinc-900 font-semibold shadow-xs border border-zinc-200/60"
-            : "text-zinc-500 hover:text-zinc-800"
-        }`}
-        title="Staff & Operations Workspace (/staff)"
-      >
-        <Briefcase class="w-3 h-3 text-blue-600" />
-        <span>Staff</span>
-      </a>
-
-      <a
-        href="/portal"
-        class={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all ${
-          isPortal
-            ? "bg-white text-zinc-900 font-semibold shadow-xs border border-zinc-200/60"
-            : "text-zinc-500 hover:text-zinc-800"
-        }`}
-        title="Customer Self-Service Portal (/portal)"
-      >
-        <UserCircle class="w-3 h-3 text-fuchsia-600" />
-        <span>Customer Portal</span>
-      </a>
-    </div>
   </div>
 
   <div class="flex items-center gap-3.5">
