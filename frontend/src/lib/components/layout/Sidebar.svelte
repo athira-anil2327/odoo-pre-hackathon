@@ -10,20 +10,74 @@
     Repeat,
     Receipt,
     UserCheck,
+    CreditCard,
     LogOut,
-    Sparkles
+    Sparkles,
+    Briefcase,
+    Shield,
+    UserCircle
   } from "lucide-svelte";
   import { Separator } from "$lib/components/ui/separator/index.js";
 
-  const navItems = [
-    { label: "Overview", href: "/", icon: LayoutDashboard },
-    { label: "Customers", href: "/customers", icon: Users },
-    { label: "Products & Plans", href: "/products", icon: Package },
-    { label: "Quotations", href: "/quotations", icon: FileText },
-    { label: "Subscriptions", href: "/subscriptions", icon: Repeat },
-    { label: "Invoices & Billing", href: "/invoices", icon: Receipt },
-    { label: "Profile & Account", href: "/profile", icon: UserCheck }
-  ];
+  const isPortal = $derived(page.url.pathname.startsWith('/portal') || page.url.pathname.startsWith('/customer'));
+  const isStaff = $derived(page.url.pathname.startsWith('/staff'));
+
+  const navItems = $derived(
+    isPortal
+      ? [
+          { label: "My Overview", href: "/portal", icon: LayoutDashboard },
+          { label: "My Subscriptions", href: "/portal/subscriptions", icon: Repeat },
+          { label: "Invoices & Receipts", href: "/portal/invoices", icon: Receipt },
+          { label: "Payment Methods", href: "/portal/payment-methods", icon: CreditCard },
+          { label: "Account Profile", href: "/profile", icon: UserCheck }
+        ]
+      : isStaff
+      ? [
+          { label: "Staff Overview", href: "/staff", icon: LayoutDashboard },
+          { label: "Assigned Customers", href: "/staff/customers", icon: Users },
+          { label: "Quotations", href: "/staff/quotations", icon: FileText },
+          { label: "Invoices & Billing", href: "/staff/invoices", icon: Receipt },
+          { label: "My Profile", href: "/profile", icon: UserCheck }
+        ]
+      : [
+          { label: "Overview", href: "/", icon: LayoutDashboard },
+          { label: "Customers", href: "/customers", icon: Users },
+          { label: "Products & Plans", href: "/products", icon: Package },
+          { label: "Quotations", href: "/quotations", icon: FileText },
+          { label: "Subscriptions", href: "/subscriptions", icon: Repeat },
+          { label: "Invoices & Billing", href: "/invoices", icon: Receipt },
+          { label: "Profile & Account", href: "/profile", icon: UserCheck }
+        ]
+  );
+
+  const persona = $derived(
+    isPortal
+      ? {
+          name: "Apex Global Tech",
+          role: "Client Account",
+          email: "billing@apextech.io",
+          avatar: "AG",
+          workspaceBadge: "Customer Portal",
+          badgeColor: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200/60"
+        }
+      : isStaff
+      ? {
+          name: "Marcus Brody",
+          role: "Sales & Operations",
+          email: "marcus.b@brightloop.io",
+          avatar: "MB",
+          workspaceBadge: "Staff Workspace",
+          badgeColor: "bg-blue-50 text-blue-700 border-blue-200/60"
+        }
+      : {
+          name: $currentUser.name,
+          role: $currentUser.role,
+          email: $currentUser.email,
+          avatar: $currentUser.avatar,
+          workspaceBadge: "Enterprise Admin",
+          badgeColor: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200/60"
+        }
+  );
 
   const currentPath = $derived(page.url.pathname);
 
@@ -43,16 +97,27 @@
       <div>
         <div class="font-bold text-sm tracking-tight text-zinc-900 leading-none flex items-center gap-1.5">
           <span>Brightloop</span>
-          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200/60 uppercase">PRO</span>
+          <span class={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border uppercase ${persona.badgeColor}`}>
+            {persona.workspaceBadge.split(' ')[0]}
+          </span>
         </div>
-        <div class="text-[10px] text-zinc-400 font-medium tracking-wider uppercase mt-1">Software Platform</div>
+        <div class="text-[10px] text-zinc-400 font-medium tracking-wider uppercase mt-1">
+          {persona.workspaceBadge}
+        </div>
       </div>
     </div>
 
     <!-- Navigation List -->
     <div class="p-3.5 space-y-1">
-      <div class="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-        Workspace
+      <div class="px-3 pb-1.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+        <span>{isPortal ? 'Client Portal' : isStaff ? 'Sales & Ops' : 'Admin Console'}</span>
+        {#if isPortal}
+          <UserCircle class="w-3 h-3 text-zinc-400" />
+        {:else if isStaff}
+          <Briefcase class="w-3 h-3 text-zinc-400" />
+        {:else}
+          <Shield class="w-3 h-3 text-zinc-400" />
+        {/if}
       </div>
       {#each navItems as item}
         {@const active = currentPath === item.href}
@@ -80,14 +145,14 @@
       title="View Profile Details"
     >
       <div class="w-8 h-8 rounded-lg gradient-magenta text-white flex items-center justify-center text-xs font-bold shrink-0">
-        {$currentUser.avatar}
+        {persona.avatar}
       </div>
       <div class="truncate flex-1 min-w-0">
         <div class="text-xs font-semibold text-zinc-900 truncate group-hover:text-fuchsia-600 transition-colors">
-          {$currentUser.name}
+          {persona.name}
         </div>
         <div class="text-[10px] text-zinc-400 truncate">
-          {$currentUser.company}
+          {persona.role}
         </div>
       </div>
     </a>
