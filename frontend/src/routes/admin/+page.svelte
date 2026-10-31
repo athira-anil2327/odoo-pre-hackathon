@@ -15,7 +15,8 @@
     ArrowUpRight,
     Plus,
     Download,
-    Sparkles
+    Sparkles,
+    UserPlus
   } from "lucide-svelte";
 
   function formatCurrency(val) {
@@ -103,6 +104,13 @@
         <p class="text-xs text-zinc-500 mt-0.5">Recurring revenue performance and active accounts across Brightloop Software.</p>
       </div>
       <div class="flex items-center gap-2.5">
+        <a
+          href="/staff-members?action=create"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#183f42] text-white hover:bg-[#123033] shadow-xs transition-all"
+        >
+          <UserPlus class="w-3.5 h-3.5" />
+          <span>Provision Staff Member</span>
+        </a>
         <Button variant="outline" size="xs" class="text-xs border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 rounded-lg gap-1.5 shadow-2xs">
           <Download class="w-3.5 h-3.5 text-zinc-500" /> Export CSV
         </Button>

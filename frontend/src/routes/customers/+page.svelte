@@ -19,7 +19,8 @@
     Repeat,
     X,
     CheckCircle2,
-    Shield
+    Shield,
+    UserPlus
   } from "lucide-svelte";
 
   let searchQuery = $state("");
@@ -50,21 +51,26 @@
     return $subscriptionsStore.filter(s => s.customer_id === custId);
   }
 
-  function handleCreateCustomer() {
+  async function handleCreateCustomer() {
     if (!newName || !newEmail) return;
-    addCustomer({
-      name: newName,
-      company: newCompany || newName,
-      email: newEmail,
-      phone: newPhone,
-      billing_address: newAddress
-    });
-    newName = "";
-    newCompany = "";
-    newEmail = "";
-    newPhone = "";
-    newAddress = "";
-    showAddCustomerModal = false;
+    try {
+      await addCustomer({
+        name: newName,
+        company: newCompany || newName,
+        email: newEmail,
+        phone: newPhone,
+        billing_address: newAddress
+      });
+      newName = "";
+      newCompany = "";
+      newEmail = "";
+      newPhone = "";
+      newAddress = "";
+      showAddCustomerModal = false;
+    } catch (err) {
+      console.error("Create customer error:", err);
+      alert("Failed to save customer to database: " + err.message);
+    }
   }
 
   function handleViewCustomer(c) {
@@ -82,13 +88,12 @@
           Enterprise subscriber accounts, billing addresses, and linked subscriptions.
         </p>
       </div>
-      <Button
-        onclick={() => (showAddCustomerModal = true)}
-        size="xs"
-        class="text-xs bg-[#183f42] hover:bg-[#123033] text-white font-semibold rounded-xl gap-1.5 shadow-xs"
+      <a
+        href="/staff-members"
+        class="inline-flex items-center text-xs bg-[#183f42] hover:bg-[#123033] text-white font-semibold px-3 py-1.5 rounded-xl gap-1.5 shadow-xs transition-all"
       >
-        <Plus class="w-3.5 h-3.5" /> Add Customer
-      </Button>
+        <UserPlus class="w-3.5 h-3.5" /> Staff Management
+      </a>
     </div>
 
     <!-- Filter & Search Toolbar -->

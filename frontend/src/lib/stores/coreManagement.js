@@ -530,52 +530,27 @@ export async function syncWithBackend() {
     ]);
 
     if (pRes.status === "fulfilled" && pRes.value.success && Array.isArray(pRes.value.data) && pRes.value.data.length > 0) {
-      productsStore.update(current => {
-        const dbIds = new Set(pRes.value.data.map(p => p.id));
-        const localOnly = current.filter(p => !dbIds.has(p.id) && String(p.id).startsWith("PROD-"));
-        return [...localOnly, ...pRes.value.data];
-      });
+      productsStore.set(pRes.value.data);
     }
     if (plRes.status === "fulfilled" && plRes.value.success && Array.isArray(plRes.value.data) && plRes.value.data.length > 0) {
-      plansStore.update(current => {
-        const dbIds = new Set(plRes.value.data.map(p => p.id));
-        const localOnly = current.filter(p => !dbIds.has(p.id) && String(p.id).startsWith("PLAN-"));
-        return [...localOnly, ...plRes.value.data];
-      });
+      plansStore.set(plRes.value.data);
     }
     if (cRes.status === "fulfilled" && cRes.value.success && Array.isArray(cRes.value.data) && cRes.value.data.length > 0) {
-      customersStore.update(current => {
-        const dbIds = new Set(cRes.value.data.map(c => c.id));
-        const localOnly = current.filter(c => !dbIds.has(c.id) && String(c.id).startsWith("CUST-"));
-        return [...localOnly, ...cRes.value.data];
-      });
+      customersStore.set(cRes.value.data);
     }
     if (tRes.status === "fulfilled" && tRes.value.success && Array.isArray(tRes.value.data) && tRes.value.data.length > 0) {
-      templatesStore.update(current => {
-        const dbIds = new Set(tRes.value.data.map(t => t.id));
-        const localOnly = current.filter(t => !dbIds.has(t.id) && String(t.id).startsWith("TMPL-"));
-        return [...localOnly, ...tRes.value.data];
-      });
+      templatesStore.set(tRes.value.data);
     }
-    if (qRes.status === "fulfilled" && qRes.value.success && Array.isArray(qRes.value.data) && qRes.value.data.length > 0) {
+    if (qRes.status === "fulfilled" && qRes.value.success && Array.isArray(qRes.value.data)) {
       const normalizedQuotes = qRes.value.data.map(q => ({
         ...q,
         quote_number: q.quotation_number || q.quote_number,
         quotation_number: q.quotation_number || q.quote_number
       }));
-      // Merge: preserve local drafts so data is NEVER wiped out on browser refresh
-      quotationsStore.update(current => {
-        const dbIds = new Set(normalizedQuotes.map(q => q.id));
-        const localOnly = current.filter(q => !dbIds.has(q.id) && String(q.id).startsWith("QUO-"));
-        return [...localOnly, ...normalizedQuotes];
-      });
+      quotationsStore.set(normalizedQuotes);
     }
-    if (sRes.status === "fulfilled" && sRes.value.success && Array.isArray(sRes.value.data) && sRes.value.data.length > 0) {
-      subscriptionsStore.update(current => {
-        const dbIds = new Set(sRes.value.data.map(s => s.id));
-        const localOnly = current.filter(s => !dbIds.has(s.id) && String(s.id).startsWith("SUB-"));
-        return [...localOnly, ...sRes.value.data];
-      });
+    if (sRes.status === "fulfilled" && sRes.value.success && Array.isArray(sRes.value.data)) {
+      subscriptionsStore.set(sRes.value.data);
     }
   } catch (err) {
     console.warn("Backend sync notice:", err);
@@ -678,7 +653,22 @@ export function addPlan(planData) {
 // -------------------------------------------------------------
 // CUSTOMER ACTIONS
 // -------------------------------------------------------------
-export function addCustomer(custData) {
+export async function addCustomer(custData) {
+  if (browser) {
+    const res = await customersApi.create({
+      name: custData.name,
+      email: custData.email.toLowerCase().trim(),
+      phone: custData.phone || "",
+      company: custData.company || custData.name,
+      billing_address: custData.billing_address || ""
+    });
+    if (res.success && res.data) {
+      await syncWithBackend();
+      return res.data;
+    } else {
+      throw new Error(res.error?.message || "Failed to create customer on server");
+    }
+  }
   const seq = Math.floor(1000 + Math.random() * 9000);
   const custNumber = `CUST-${seq}`;
   const newCust = {
@@ -699,7 +689,20 @@ export function addCustomer(custData) {
 // -------------------------------------------------------------
 // QUOTATION TEMPLATE ACTIONS
 // -------------------------------------------------------------
-export function addTemplate(tmplData) {
+export async function addTemplate(tmplData) {
+  if (browser && tmplData.plan_id && tmplData.plan_id.length > 20) {
+    const res = await quotationsApi.createTemplate({
+      name: tmplData.name,
+      plan_id: tmplData.plan_id,
+      validity_days: Number(tmplData.validity_days) || 30,
+      description: tmplData.description || "",
+      lines: tmplData.lines || []
+    });
+    if (res.success && res.data) {
+      await syncWithBackend();
+      return res.data;
+    }
+  }
   const id = `TMPL-${Date.now().toString().slice(-4)}`;
   
   const processedLines = (tmplData.lines || []).map(line => {
@@ -759,7 +762,7 @@ export function addTemplate(tmplData) {
 // -------------------------------------------------------------
 // QUOTATION CREATION & STATE MACHINE
 // -------------------------------------------------------------
-export function createQuotationFromTemplate(templateId, customerId, customLines = null, options = {}) {
+export async function createQuotationFromTemplate(templateId, customerId, customLines = null, options = {}) {
   let template = null;
   templatesStore.subscribe(val => {
     template = val.find(t => t.id === templateId);
@@ -767,6 +770,21 @@ export function createQuotationFromTemplate(templateId, customerId, customLines 
 
   if (!template) {
     throw new Error("Quotation template not found");
+  }
+
+  // Persist directly to PostgreSQL database via from-template API
+  if (browser && templateId && templateId.length > 20 && customerId && customerId.length > 20) {
+    const res = await quotationsApi.createFromTemplate({
+      template_id: templateId,
+      customer_id: customerId,
+      custom_lines: customLines
+    });
+    if (res.success && res.data) {
+      await syncWithBackend();
+      return res.data;
+    } else {
+      throw new Error(res.error?.message || "Failed to create quotation on server");
+    }
   }
 
   const today = new Date().toISOString().split("T")[0];
@@ -777,7 +795,7 @@ export function createQuotationFromTemplate(templateId, customerId, customLines 
   let linesToProcess = customLines || template.lines;
   let subtotal = 0;
 
-  const processedLines = linesToProcess.map((line, idx) => {
+  const processedLines = (linesToProcess || []).map((line, idx) => {
     const qty = Number(line.quantity) || 1;
     const basePrice = Number(line.unit_price) || 0;
     const priceExtra = Number(line.price_extra || line.variant_price_extra) || 0;
@@ -828,7 +846,6 @@ export function createQuotationFromTemplate(templateId, customerId, customLines 
   };
 
   quotationsStore.update(list => [newQuote, ...list]);
-
   // Persist directly to backend PostgreSQL database
   if (browser) {
     let customer = null;
@@ -880,9 +897,12 @@ export function createQuotationFromTemplate(templateId, customerId, customLines 
 }
 
 // Transition: Draft -> Quotation (Send Quote)
-export function sendQuotation(quoteId) {
+export async function sendQuotation(quoteId) {
   if (browser && quoteId && quoteId.length > 20) {
-    quotationsApi.send(quoteId).catch(err => console.warn("Backend send quote notice:", err));
+    const res = await quotationsApi.send(quoteId);
+    if (!res.success) throw new Error(res.error?.message || "Failed to send quotation");
+    await syncWithBackend();
+    return true;
   }
   quotationsStore.update(list =>
     list.map(q => (q.id === quoteId ? { ...q, status: "Quotation" } : q))
@@ -892,13 +912,12 @@ export function sendQuotation(quoteId) {
 
 // Transition: Quotation -> Confirmed
 // Validates plan.min_quantity and converts into a linked subscription record!
-export function confirmQuotation(quoteId, performedBy = "Staff Operations") {
+export async function confirmQuotation(quoteId, performedBy = "Staff Operations") {
   if (browser && quoteId && quoteId.length > 20) {
-    quotationsApi.confirm(quoteId).then(res => {
-      if (res.success && res.data) {
-        syncWithBackend();
-      }
-    }).catch(err => console.warn("Backend confirm quote notice:", err));
+    const res = await quotationsApi.confirm(quoteId);
+    if (!res.success) throw new Error(res.error?.message || "Failed to confirm quotation");
+    await syncWithBackend();
+    return res.data?.subscription || { subscription_number: "Confirmed" };
   }
   let quote = null;
   quotationsStore.subscribe(val => {
@@ -1050,9 +1069,12 @@ export function activateSubscription(subId, performedBy = "Staff Operations") {
 }
 
 // Transition: Active -> Paused (Pause)
-export function pauseSubscription(subId, reason = "Requested by customer", performedBy = "Staff Operations") {
+export async function pauseSubscription(subId, reason = "Requested by customer", performedBy = "Staff Operations") {
   if (browser && subId && subId.length > 20) {
-    subscriptionsApi.pause(subId, reason).catch(err => console.warn("Backend pause notice:", err));
+    const res = await subscriptionsApi.pause(subId, reason);
+    if (!res.success) throw new Error(res.error?.message || "Failed to pause subscription on server");
+    await syncWithBackend();
+    return true;
   }
   let sub = null;
   subscriptionsStore.subscribe(val => {
@@ -1090,9 +1112,12 @@ export function pauseSubscription(subId, reason = "Requested by customer", perfo
 }
 
 // Transition: Paused -> Active (Resume)
-export function resumeSubscription(subId, performedBy = "Staff Operations") {
+export async function resumeSubscription(subId, performedBy = "Staff Operations") {
   if (browser && subId && subId.length > 20) {
-    subscriptionsApi.resume(subId).catch(err => console.warn("Backend resume notice:", err));
+    const res = await subscriptionsApi.resume(subId);
+    if (!res.success) throw new Error(res.error?.message || "Failed to resume subscription on server");
+    await syncWithBackend();
+    return true;
   }
   subscriptionsStore.update(list =>
     list.map(s => (s.id === subId ? { ...s, status: "Active", paused_at: null } : s))
@@ -1111,9 +1136,12 @@ export function resumeSubscription(subId, performedBy = "Staff Operations") {
 }
 
 // Transition: Active -> Closed (Early Closure)
-export function closeSubscription(subId, reason = "Customer cancelled", performedBy = "Staff Operations") {
+export async function closeSubscription(subId, reason = "Customer cancelled", performedBy = "Staff Operations") {
   if (browser && subId && subId.length > 20) {
-    subscriptionsApi.close(subId, reason).catch(err => console.warn("Backend close notice:", err));
+    const res = await subscriptionsApi.close(subId, reason);
+    if (!res.success) throw new Error(res.error?.message || "Failed to close subscription on server");
+    await syncWithBackend();
+    return true;
   }
   let sub = null;
   subscriptionsStore.subscribe(val => {

@@ -22,9 +22,12 @@
         <h2 class="text-base font-bold text-zinc-900 tracking-tight">Customer Directory</h2>
         <p class="text-xs text-zinc-500 mt-0.5">Corporate subscriber accounts and billing contacts.</p>
       </div>
-      <Button variant="default" size="xs" class="text-xs gradient-magenta hover:opacity-95 text-white glow-magenta-xs font-semibold rounded-lg gap-1.5 shadow-xs">
-        <Plus class="w-3.5 h-3.5" /> Add Customer
-      </Button>
+      <a
+        href="/staff-members"
+        class="inline-flex items-center text-xs bg-[#183f42] hover:bg-[#123033] text-white font-semibold px-3 py-1.5 rounded-xl gap-1.5 shadow-xs transition-all"
+      >
+        <span>Staff Management</span>
+      </a>
     </div>
 
     <!-- Filter & Search Toolbar -->

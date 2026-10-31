@@ -112,11 +112,32 @@ export const getQuotations = async (req, res) => {
         p.name AS plan_name,
         p.billing_frequency,
         s.id AS converted_subscription_id,
-        s.subscription_number AS converted_subscription_number
+        s.subscription_number AS converted_subscription_number,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', ql.id,
+              'product_id', ql.product_id,
+              'product_name', ql.product_name,
+              'variant_id', ql.variant_id,
+              'variant_name', ql.variant_name,
+              'description', ql.description,
+              'quantity', ql.quantity,
+              'unit_price', ql.unit_price,
+              'effective_unit_price', ql.unit_price,
+              'line_subtotal', ql.line_subtotal,
+              'tax_amount', ql.tax_amount,
+              'discount_amount', ql.discount_amount,
+              'line_total', ql.line_total
+            )
+          ) FILTER (WHERE ql.id IS NOT NULL), '[]'::json
+        ) AS lines
       FROM quotations q
       JOIN customers c ON c.id = q.customer_id
       JOIN plans p ON p.id = q.plan_id
       LEFT JOIN subscriptions s ON s.quotation_id = q.id
+      LEFT JOIN quotation_lines ql ON ql.quotation_id = q.id
+      GROUP BY q.id, c.customer_number, c.name, c.company, c.email, p.name, p.billing_frequency, s.id, s.subscription_number
       ORDER BY q.created_at DESC;
     `);
 

@@ -9,7 +9,8 @@
     ChevronDown,
     ArrowUpRight,
     TrendingUp,
-    Repeat
+    Repeat,
+    Users
   } from "lucide-svelte";
 
   // Active view toggle between Invoices and Subscriptions
@@ -177,17 +178,17 @@
         </div>
       </div>
 
-      <!-- 5. New Customers -->
-      <div class="bg-[#183f42] text-white rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xs col-span-2 md:col-span-1">
-        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 self-center mb-3">
-          <BarChart3 class="w-4 h-4 text-white" />
+      <!-- 5. Staff Operations -->
+      <a href="/staff-members" class="bg-[#183f42] hover:bg-[#123033] text-white rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xs col-span-2 md:col-span-1 transition-all group">
+        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 self-center mb-3 group-hover:scale-105 transition-transform">
+          <Users class="w-4 h-4 text-white" />
         </div>
         <div class="text-center">
-          <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">124</div>
-          <div class="text-xs font-medium text-teal-100/90 mt-1">New Customers</div>
-          <div class="text-[11px] text-teal-200/80 mt-1">+20 vs last month</div>
+          <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">Staff</div>
+          <div class="text-xs font-medium text-teal-100/90 mt-1">Staff Operations</div>
+          <div class="text-[11px] text-teal-200/80 mt-1">Manage Logins &rarr;</div>
         </div>
-      </div>
+      </a>
     </div>
 
     <!-- Middle Section: Chart & Recent Activity matching theme.jpeg -->

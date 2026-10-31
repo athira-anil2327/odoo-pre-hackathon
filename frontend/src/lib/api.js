@@ -60,7 +60,7 @@ export const authApi = {
   forgotPassword: (email) => apiFetch("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
   resetPassword: (payload) => apiFetch("/auth/reset-password", { method: "POST", body: JSON.stringify(payload) }),
   getUsers: () => apiFetch("/auth/users"),
-  createStaff: (payload) => apiFetch("/auth/staff", { method: "POST", body: JSON.stringify(payload) })
+  createStaff: (payload) => apiFetch("/auth/create-staff", { method: "POST", body: JSON.stringify(payload) })
 };
 
 export const customersApi = {

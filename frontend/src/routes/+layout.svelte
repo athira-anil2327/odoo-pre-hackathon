@@ -54,9 +54,9 @@
 					return;
 				}
 			} else if (role === 'admin') {
-				// Admin has exclusive access to admin pages (/ , /admin, /customers, /products, /quotations, /subscriptions, /invoices, /profile)
-				// If admin visits /staff or /portal, redirect to admin dashboard
-				if (pathname.startsWith('/staff') || pathname.startsWith('/portal')) {
+				// Admin has exclusive access to admin pages (/ , /admin, /staff-members, /customers, /products, /quotations, /subscriptions, /invoices, /profile)
+				// If admin visits /staff (staff workspace) or /portal, redirect to admin dashboard
+				if (pathname === '/staff' || pathname.startsWith('/staff/') || pathname.startsWith('/portal')) {
 					console.warn(`[RBAC] Redirecting admin from '${pathname}' to admin dashboard.`);
 					goto('/');
 					return;

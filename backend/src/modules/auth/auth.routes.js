@@ -21,5 +21,6 @@ router.post("/reset-password", resetPassword);
 // User administration
 router.get("/users", requireAuth, requireRole("admin"), getUsers);
 router.post("/create-staff", requireAuth, requireRole("admin"), createStaffUser);
+router.post("/staff", requireAuth, requireRole("admin"), createStaffUser);
 
 export default router;

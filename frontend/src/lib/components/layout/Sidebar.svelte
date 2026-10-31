@@ -42,7 +42,7 @@
         ]
       : [
           { label: "Dashboard", href: "/", icon: LayoutDashboard, hasArrow: true },
-          { label: "Customers", href: "/customers", icon: Users, hasArrow: true },
+          { label: "Staff", href: "/staff-members", icon: Users, hasArrow: true },
           { label: "Quotes", href: "/quotations", icon: HeartHandshake, hasArrow: true },
           { label: "Subscriptions", href: "/subscriptions", icon: Repeat, hasArrow: true },
           { label: "Invoice & Billing", href: "/invoices", icon: FileText, hasArrow: true },

@@ -1,5 +1,5 @@
 <script>
-  import { Search, Bell, HelpCircle, Plus, ChevronDown, Shield, Briefcase, UserCircle, FileText, HeartHandshake, Repeat, Package } from "lucide-svelte";
+  import { Search, Bell, HelpCircle, Plus, ChevronDown, Shield, Briefcase, UserCircle, FileText, HeartHandshake, Repeat, Package, UserPlus } from "lucide-svelte";
   import { currentUser, getUserRole } from "$lib/stores/auth.js";
   import { page } from "$app/state";
 
@@ -109,6 +109,14 @@
               >
                 <Package class="w-3.5 h-3.5 text-[#183f42]" />
                 <span>Create Product</span>
+              </a>
+              <a
+                href="/staff-members?action=create"
+                onclick={() => (isCreateMenuOpen = false)}
+                class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb] border-t border-[#f4f7f8]"
+              >
+                <UserPlus class="w-3.5 h-3.5 text-[#183f42]" />
+                <span>Create Staff Account</span>
               </a>
             {:else if isStaff}
               <a

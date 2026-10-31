@@ -3,6 +3,7 @@ import crypto from "crypto";
 import pool from "../../config/db.js";
 import { generateToken } from "../../middleware/auth.middleware.js";
 import { successResponse, errorResponse } from "../../utils/response.js";
+import { sendStaffWelcomeEmail } from "../../utils/mailer.js";
 
 export const register = async (req, res) => {
   const { email, password, name, phone, company, billing_address } = req.body;
@@ -239,26 +240,57 @@ export const getUsers = async (req, res) => {
 export const createStaffUser = async (req, res) => {
   const { email, password, name, role = "staff" } = req.body;
 
-  if (!email || !password || !name) {
-    return errorResponse(res, "Email, password, and name are required.", 400);
+  if (!email || !name) {
+    return errorResponse(res, "Email and contact name are required.", 400);
   }
+
+  const normalizedEmail = email.toLowerCase().trim();
+  const rawPassword = password || `Staff@BrightLoop${Math.floor(1000 + Math.random() * 9000)}!`;
 
   if (!["admin", "staff"].includes(role)) {
     return errorResponse(res, "Role must be 'staff' or 'admin'.", 400);
   }
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // 1. Check if user already exists
+    const existing = await pool.query(
+      "SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1",
+      [normalizedEmail]
+    );
 
+    if (existing.rows.length > 0) {
+      return errorResponse(res, `User with email '${normalizedEmail}' already exists.`, 409);
+    }
+
+    // 2. Hash password
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+    // 3. Insert staff user into database
     const result = await pool.query(
       `INSERT INTO users (email, password_hash, name, role, is_active, is_verified)
        VALUES ($1, $2, $3, $4, TRUE, TRUE)
        RETURNING id, email, name, role, is_active, created_at;`,
-      [email.trim(), hashedPassword, name.trim(), role]
+      [normalizedEmail, hashedPassword, name.trim(), role]
     );
 
-    return successResponse(res, result.rows[0], `User with role '${role}' created successfully.`, 201);
+    const newUser = result.rows[0];
+
+    // 4. Dispatch credentials email with username and password
+    const clientOrigin = req.headers.origin || "http://localhost:5173";
+    const emailResult = await sendStaffWelcomeEmail({
+      to: normalizedEmail,
+      name: name.trim(),
+      username: normalizedEmail,
+      password: rawPassword,
+      loginUrl: `${clientOrigin}/signin`
+    });
+
+    return successResponse(res, {
+      user: newUser,
+      temporaryPassword: rawPassword,
+      emailStatus: emailResult
+    }, `Staff member '${name.trim()}' created successfully and credentials dispatched to ${normalizedEmail}.`, 201);
   } catch (err) {
-    return errorResponse(res, "Failed to create user: " + err.message, 500);
+    return errorResponse(res, "Failed to create staff member: " + err.message, 500);
   }
 };

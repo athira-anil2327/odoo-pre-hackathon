@@ -79,13 +79,13 @@
     showPauseModal = true;
   }
 
-  function handleConfirmPause() {
+  async function handleConfirmPause() {
     actionError = "";
     actionSuccess = "";
     if (!selectedSub) return;
     try {
-      pauseSubscription(selectedSub.id, pauseReason);
-      actionSuccess = `Subscription ${selectedSub.id} moved to PAUSED. Verified plan.allow_pause = true.`;
+      await pauseSubscription(selectedSub.id, pauseReason);
+      actionSuccess = `Subscription ${selectedSub.subscription_number || selectedSub.id} moved to PAUSED in database.`;
       showPauseModal = false;
     } catch (e) {
       actionError = e.message;
@@ -93,12 +93,12 @@
     }
   }
 
-  function handleResume(subId) {
+  async function handleResume(subId) {
     actionError = "";
     actionSuccess = "";
     try {
-      resumeSubscription(subId);
-      actionSuccess = `Subscription ${subId} RESUMED and returned to Active state.`;
+      await resumeSubscription(subId);
+      actionSuccess = `Subscription RESUMED and returned to Active state in database.`;
     } catch (e) {
       actionError = e.message;
     }
@@ -110,13 +110,13 @@
     showCloseModal = true;
   }
 
-  function handleConfirmClose() {
+  async function handleConfirmClose() {
     actionError = "";
     actionSuccess = "";
     if (!selectedSub) return;
     try {
-      closeSubscription(selectedSub.id, closeReason);
-      actionSuccess = `Subscription ${selectedSub.id} successfully CLOSED. Verified plan.allow_early_close policy.`;
+      await closeSubscription(selectedSub.id, closeReason);
+      actionSuccess = `Subscription ${selectedSub.subscription_number || selectedSub.id} successfully CLOSED in database.`;
       showCloseModal = false;
     } catch (e) {
       actionError = e.message;
@@ -124,12 +124,12 @@
     }
   }
 
-  function handleRenew(subId) {
+  async function handleRenew(subId) {
     actionError = "";
     actionSuccess = "";
     try {
-      const renewed = renewSubscription(subId);
-      actionSuccess = `Subscription renewed into ${renewed.subscription_number}! Linked via renewed_from_subscription_id = ${subId}.`;
+      await renewSubscription(subId);
+      actionSuccess = `Subscription renewed and recorded in database!`;
     } catch (e) {
       actionError = e.message;
     }

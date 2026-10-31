@@ -389,7 +389,7 @@
   const newTmplTax = $derived(newTmplSubtotal * 0.18);
   const newTmplTotal = $derived(newTmplSubtotal + newTmplTax);
 
-  function handleSaveTemplate() {
+  async function handleSaveTemplate() {
     actionError = "";
     if (!newTmplName.trim()) {
       actionError = "Template name is required.";
@@ -412,7 +412,7 @@
     }
 
     try {
-      const tmpl = addTemplate({
+      const tmpl = await addTemplate({
         name: newTmplName.trim(),
         plan_id: newTmplPlanId,
         validity_days: Number(newTmplValidityDays) || 30,
@@ -431,24 +431,33 @@
   // =========================================================================
   // 3. LIFECYCLE ACTIONS (Send & Confirm)
   // =========================================================================
-  function handleSendQuote(quoteId) {
+  async function handleSendQuote(quoteId) {
     actionError = "";
-    sendQuotation(quoteId);
-    actionSuccess = `Quotation marked as Sent to customer. Status updated to 'Quotation'.`;
-  }
-
-  function handleConfirmQuote(quoteId) {
-    actionError = "";
-    actionSuccess = "";
     try {
-      const sub = confirmQuotation(quoteId);
-      actionSuccess = `Quotation confirmed successfully! Plan min_quantity validated. Subscription ${sub.subscription_number || sub.id} generated.`;
+      await sendQuotation(quoteId);
+      actionSuccess = `Quotation marked as Sent to customer. Status updated to 'Quotation'.`;
+    } catch (e) {
+      actionError = e.message;
+    }
+  }
     } catch (e) {
       actionError = e.message;
     }
   }
 
-  function handleViewQuote(quote) {
+  async function handleConfirmQuote(quoteId) {
+    actionError = "";
+    actionSuccess = "";
+    try {
+      const sub = await confirmQuotation(quoteId);
+      const subNumber = sub.subscription_number || "generated";
+      actionSuccess = `Quotation confirmed successfully! Plan min_quantity validated. Subscription ${subNumber} generated.`;
+    } catch (e) {
+      actionError = e.message;
+    }
+  }
+
+  async function handleViewQuote(quote) {
     selectedQuote = quote;
     showViewQuoteModal = true;
   }
@@ -1353,6 +1362,7 @@
       </div>
 
       <div class="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+        <div class="grid grid-cols-2 gap-2 p-3 bg-[#f8fafb] border border-[#edf2f3] rounded-xl text-[11px]">
         <div class="grid grid-cols-2 gap-2 p-3 bg-[#f8fafb] border border-[#edf2f3] rounded-xl text-[11px]">
           <div><span class="text-[#7e9599]">Customer:</span> <b class="text-[#122b2e] block">{getCustomerName(selectedQuote.customer_id, selectedQuote)}</b></div>
           <div><span class="text-[#7e9599]">Status:</span> <b class="text-[#183f42] block">{selectedQuote.status}</b></div>
