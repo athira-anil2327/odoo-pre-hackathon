@@ -1,5 +1,5 @@
 <script>
-  import { Search, Bell, HelpCircle, Plus, ChevronDown, Shield, Briefcase, UserCircle } from "lucide-svelte";
+  import { Search, Bell, HelpCircle, Plus, ChevronDown, Shield, Briefcase, UserCircle, FileText, HeartHandshake, Repeat, Package } from "lucide-svelte";
   import { currentUser } from "$lib/stores/auth.js";
   import { page } from "$app/state";
 
@@ -8,6 +8,8 @@
   const isPortal = $derived(page.url.pathname.startsWith('/portal') || page.url.pathname.startsWith('/customer'));
   const isStaff = $derived(page.url.pathname.startsWith('/staff'));
   const isAdmin = $derived(!isPortal && !isStaff);
+
+  let isCreateMenuOpen = $state(false);
 
   const activePersona = $derived(
     isPortal
@@ -25,7 +27,7 @@
       <Search class="w-4 h-4 text-zinc-400 absolute left-4 top-1/2 -translate-y-1/2" />
       <input
         type="text"
-        placeholder="Search customers, invoices, subscriptions"
+        placeholder="search customers, invoices, subscriptions"
         class="w-full h-11 pl-11 pr-4 text-xs bg-[#f8fafb] border border-[#e5ecee] rounded-full text-[#122b2e] placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#183f42]/20 focus:border-[#183f42] transition-all"
       />
     </div>
@@ -84,13 +86,52 @@
     </button>
 
     <!-- Dark Teal Pill "+ Create" Button matching theme.jpeg -->
-    <a
-      href="/invoices"
-      class="inline-flex items-center gap-1.5 bg-[#183f42] hover:bg-[#112f31] text-white text-xs font-semibold px-4 sm:px-5 py-2.5 rounded-full shadow-xs transition-all"
-    >
-      <Plus class="w-4 h-4" />
-      <span>Create</span>
-    </a>
+    <div class="relative">
+      <button
+        onclick={() => (isCreateMenuOpen = !isCreateMenuOpen)}
+        class="inline-flex items-center gap-1.5 bg-[#183f42] hover:bg-[#112f31] text-white text-xs font-semibold px-4 sm:px-5 py-2.5 rounded-full shadow-xs transition-all"
+      >
+        <Plus class="w-4 h-4" />
+        <span>Create</span>
+      </button>
+
+      {#if isCreateMenuOpen}
+        <div class="absolute right-0 mt-2 w-48 bg-white border border-[#edf2f3] rounded-2xl shadow-xl py-2 z-50 text-xs">
+          <a
+            href="/invoices"
+            onclick={() => (isCreateMenuOpen = false)}
+            class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
+          >
+            <FileText class="w-3.5 h-3.5 text-[#183f42]" />
+            <span>Create Invoice</span>
+          </a>
+          <a
+            href="/quotations"
+            onclick={() => (isCreateMenuOpen = false)}
+            class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
+          >
+            <HeartHandshake class="w-3.5 h-3.5 text-[#183f42]" />
+            <span>Create Quote</span>
+          </a>
+          <a
+            href="/subscriptions"
+            onclick={() => (isCreateMenuOpen = false)}
+            class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
+          >
+            <Repeat class="w-3.5 h-3.5 text-[#183f42]" />
+            <span>Create Subscription</span>
+          </a>
+          <a
+            href="/products"
+            onclick={() => (isCreateMenuOpen = false)}
+            class="flex items-center gap-2.5 px-4 py-2 text-[#586f73] hover:text-[#122b2e] hover:bg-[#f8fafb]"
+          >
+            <Package class="w-3.5 h-3.5 text-[#183f42]" />
+            <span>Create Product</span>
+          </a>
+        </div>
+      {/if}
+    </div>
 
     <!-- User Profile Dropdown matching theme.jpeg -->
     <a

@@ -149,22 +149,20 @@
       </div>
     </div>
 
-    <!-- Staff Metric Cards -->
+    <!-- Staff Metric Cards matching theme.jpeg -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {#each staffMetrics as metric}
         {@const Icon = metric.icon}
-        <Card.Root class="bg-white border-zinc-200/80 shadow-xs rounded-xl overflow-hidden hover:border-zinc-300 transition-all">
-          <Card.Content class="p-4 flex items-center justify-between">
-            <div>
-              <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">{metric.title}</div>
-              <div class="text-xl font-bold text-zinc-900 mt-1">{metric.value}</div>
-              <div class="text-[11px] text-zinc-500 mt-0.5">{metric.sub}</div>
-            </div>
-            <div class={`w-10 h-10 rounded-xl ${metric.bg} ${metric.color} flex items-center justify-center`}>
-              <Icon class="w-5 h-5" />
-            </div>
-          </Card.Content>
-        </Card.Root>
+        <div class="bg-[#183f42] text-white rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xs">
+          <div class="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 self-start mb-3">
+            <Icon class="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">{metric.value}</div>
+            <div class="text-xs font-medium text-teal-100/90 mt-1">{metric.title}</div>
+            <div class="text-[11px] text-teal-200/80 mt-1">{metric.sub}</div>
+          </div>
+        </div>
       {/each}
     </div>
 
