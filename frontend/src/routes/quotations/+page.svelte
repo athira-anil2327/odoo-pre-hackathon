@@ -440,10 +440,6 @@
       actionError = e.message;
     }
   }
-    } catch (e) {
-      actionError = e.message;
-    }
-  }
 
   async function handleConfirmQuote(quoteId) {
     actionError = "";
@@ -1362,7 +1358,6 @@
       </div>
 
       <div class="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
-        <div class="grid grid-cols-2 gap-2 p-3 bg-[#f8fafb] border border-[#edf2f3] rounded-xl text-[11px]">
         <div class="grid grid-cols-2 gap-2 p-3 bg-[#f8fafb] border border-[#edf2f3] rounded-xl text-[11px]">
           <div><span class="text-[#7e9599]">Customer:</span> <b class="text-[#122b2e] block">{getCustomerName(selectedQuote.customer_id, selectedQuote)}</b></div>
           <div><span class="text-[#7e9599]">Status:</span> <b class="text-[#183f42] block">{selectedQuote.status}</b></div>
