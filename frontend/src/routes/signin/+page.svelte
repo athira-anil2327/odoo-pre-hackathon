@@ -78,6 +78,45 @@
             Sign In
           </Button>
 
+          <!-- Quick Persona Selector for Testing Dedicated URLs -->
+          <div class="pt-3 border-t border-zinc-100">
+            <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block text-center mb-2">
+              Demo Quick Access By Role
+            </span>
+            <div class="grid grid-cols-3 gap-1.5 text-[11px]">
+              <button
+                type="button"
+                onclick={() => {
+                  login({ role: "Enterprise Administrator", name: "Dr. Eleanor Vance" });
+                  goto("/");
+                }}
+                class="px-2 py-1.5 rounded-lg border border-zinc-200 bg-zinc-50 hover:bg-fuchsia-50 hover:text-fuchsia-700 hover:border-fuchsia-300 font-medium text-zinc-700 transition-all text-center"
+              >
+                Admin
+              </button>
+              <button
+                type="button"
+                onclick={() => {
+                  login({ role: "Sales & Support", name: "Marcus Brody" });
+                  goto("/staff");
+                }}
+                class="px-2 py-1.5 rounded-lg border border-zinc-200 bg-zinc-50 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 font-medium text-zinc-700 transition-all text-center"
+              >
+                Staff
+              </button>
+              <button
+                type="button"
+                onclick={() => {
+                  login({ role: "Client Representative", name: "Sarah Jenkins" });
+                  goto("/portal");
+                }}
+                class="px-2 py-1.5 rounded-lg border border-zinc-200 bg-zinc-50 hover:bg-fuchsia-50 hover:text-fuchsia-700 hover:border-fuchsia-300 font-medium text-zinc-700 transition-all text-center"
+              >
+                Customer
+              </button>
+            </div>
+          </div>
+
           <div class="text-center text-[11px] text-zinc-500 pt-2">
             Don't have an account?
             <a href="/signup" class="font-semibold text-fuchsia-600 hover:text-fuchsia-700 hover:underline ml-1">Sign Up</a>
