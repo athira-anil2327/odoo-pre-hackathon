@@ -174,7 +174,7 @@
                         Record Payment
                       </Button>
                       <button
-                        class="p-1 rounded text-zinc-400 hover:text-fuchsia-600 hover:bg-fuchsia-50 transition-colors"
+                        class="p-1 rounded text-zinc-400 hover:text-[#183f42] hover:bg-[#e6f4f2]/60 transition-colors"
                         title="Send Reminder Email"
                       >
                         <Send class="w-3.5 h-3.5" />
@@ -197,7 +197,7 @@
         <div class="bg-white rounded-2xl border border-zinc-200 shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           <div class="p-4 border-b border-zinc-100 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <CreditCard class="w-4 h-4 text-fuchsia-600" />
+              <CreditCard class="w-4 h-4 text-[#183f42]" />
               <h3 class="text-sm font-bold text-zinc-900">Record Offline Payment</h3>
             </div>
             <button onclick={() => (showPaymentModal = false)} class="p-1 rounded-md text-zinc-400 hover:text-zinc-600">
@@ -245,7 +245,7 @@
             <Button variant="outline" size="sm" onclick={() => (showPaymentModal = false)} class="text-xs h-8">
               Cancel
             </Button>
-            <Button size="sm" onclick={handleRecordPayment} class="gradient-magenta text-white text-xs h-8 glow-magenta-xs">
+            <Button size="sm" onclick={handleRecordPayment} class="bg-[#183f42] text-white text-xs h-8 shadow-xs">
               Confirm Receipt
             </Button>
           </div>

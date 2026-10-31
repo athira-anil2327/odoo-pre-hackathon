@@ -187,7 +187,7 @@
                       <Button
                         size="xs"
                         onclick={() => openPayModal(inv)}
-                        class="h-7 text-[11px] gradient-magenta text-white glow-magenta-xs"
+                        class="h-7 text-[11px] bg-[#183f42] text-white shadow-xs"
                       >
                         Pay Now
                       </Button>
@@ -214,7 +214,7 @@
         <div class="bg-white rounded-2xl border border-zinc-200 shadow-xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           <div class="p-4 border-b border-zinc-100 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <CreditCard class="w-4 h-4 text-fuchsia-600" />
+              <CreditCard class="w-4 h-4 text-[#183f42]" />
               <h3 class="text-sm font-bold text-zinc-900">Pay Outstanding Invoice</h3>
             </div>
             <button onclick={() => (showPayModal = false)} class="p-1 rounded-md text-zinc-400 hover:text-zinc-600">
@@ -234,19 +234,19 @@
               </div>
               <div class="flex justify-between text-zinc-500 border-t border-zinc-200 pt-1 font-bold text-sm">
                 <span>Amount Due:</span>
-                <span class="text-fuchsia-600">{selectedInvoice.amount}</span>
+                <span class="text-[#183f42]">{selectedInvoice.amount}</span>
               </div>
             </div>
 
-            <div class="p-3 rounded-xl border border-fuchsia-300 bg-fuchsia-50/40 flex items-center justify-between">
+            <div class="p-3 rounded-xl border border-[#bde4df] bg-[#e6f4f2]/40 flex items-center justify-between">
               <div class="flex items-center gap-2.5">
-                <CreditCard class="w-4 h-4 text-fuchsia-600" />
+                <CreditCard class="w-4 h-4 text-[#183f42]" />
                 <div>
                   <div class="font-semibold text-zinc-900 text-xs">Visa ending in 4242</div>
                   <div class="text-[10px] text-zinc-500">Authorized primary card</div>
                 </div>
               </div>
-              <Check class="w-4 h-4 text-fuchsia-600" />
+              <Check class="w-4 h-4 text-[#183f42]" />
             </div>
           </div>
 
@@ -258,7 +258,7 @@
               size="sm"
               onclick={handleProcessPayment}
               disabled={isPaying}
-              class="gradient-magenta text-white text-xs h-8 glow-magenta-xs"
+              class="bg-[#183f42] text-white text-xs h-8 shadow-xs"
             >
               {isPaying ? "Processing..." : `Confirm & Pay ${selectedInvoice.amount}`}
             </Button>

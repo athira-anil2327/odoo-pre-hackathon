@@ -58,7 +58,7 @@
       <Button
         onclick={() => (showUpgradeModal = true)}
         size="sm"
-        class="gradient-magenta text-white glow-magenta-xs text-xs h-8"
+        class="bg-[#183f42] text-white shadow-xs text-xs h-8"
       >
         <Sparkles class="w-3.5 h-3.5 mr-1" /> Change / Upgrade Plan
       </Button>
@@ -69,7 +69,7 @@
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div class="space-y-2">
           <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-fuchsia-600 uppercase tracking-wider">Active Contract</span>
+            <span class="text-xs font-bold text-[#183f42] uppercase tracking-wider">Active Contract</span>
             <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
               Auto-Renewing
             </span>
@@ -84,7 +84,7 @@
               <span>99.9% Uptime Guarantee</span>
             </div>
             <div class="flex items-center gap-1.5">
-              <Users class="w-4 h-4 text-fuchsia-600" />
+              <Users class="w-4 h-4 text-[#183f42]" />
               <span>18 of 25 Seats Active</span>
             </div>
             <div class="flex items-center gap-1.5">
@@ -101,7 +101,7 @@
           <Button
             size="sm"
             onclick={() => (showUpgradeModal = true)}
-            class="gradient-magenta text-white glow-magenta-xs text-xs h-8 mt-3 w-full"
+            class="bg-[#183f42] text-white shadow-xs text-xs h-8 mt-3 w-full"
           >
             Modify Tier
           </Button>
@@ -116,14 +116,14 @@
         {#each plans as plan}
           <div class={`rounded-2xl p-5 border bg-white flex flex-col justify-between transition-all ${
             plan.current
-              ? "border-fuchsia-400 shadow-md ring-1 ring-fuchsia-200"
+              ? "border-[#183f42] shadow-md ring-1 ring-[#bde4df]"
               : "border-zinc-200/80 shadow-xs hover:border-zinc-300"
           }`}>
             <div>
               <div class="flex items-center justify-between mb-2">
                 <h4 class="text-sm font-bold text-zinc-900">{plan.name}</h4>
                 {#if plan.current}
-                  <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200">
+                  <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#e6f4f2] text-[#143e42] border border-[#bde4df]">
                     Current
                   </span>
                 {/if}
@@ -138,7 +138,7 @@
               <div class="space-y-2 text-xs border-t border-zinc-100 pt-4">
                 {#each plan.features as feat}
                   <div class="flex items-center gap-2 text-zinc-600">
-                    <Check class="w-3.5 h-3.5 text-fuchsia-600 shrink-0" />
+                    <Check class="w-3.5 h-3.5 text-[#183f42] shrink-0" />
                     <span>{feat}</span>
                   </div>
                 {/each}
@@ -154,7 +154,7 @@
                 <Button
                   variant="outline"
                   onclick={() => (showUpgradeModal = true)}
-                  class="w-full text-xs h-8 border-zinc-200 hover:border-fuchsia-300 hover:bg-fuchsia-50/50"
+                  class="w-full text-xs h-8 border-zinc-200 hover:border-[#bde4df] hover:bg-[#e6f4f2]/50"
                 >
                   Select Plan
                 </Button>
@@ -171,7 +171,7 @@
         <div class="bg-white rounded-2xl border border-zinc-200 shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           <div class="p-4 border-b border-zinc-100 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <Sparkles class="w-4 h-4 text-fuchsia-600" />
+              <Sparkles class="w-4 h-4 text-[#183f42]" />
               <h3 class="text-sm font-bold text-zinc-900">Request Plan Tier Upgrade</h3>
             </div>
             <button onclick={() => (showUpgradeModal = false)} class="p-1 rounded-md text-zinc-400 hover:text-zinc-600">
@@ -191,7 +191,7 @@
                   onclick={() => (selectedPlan = p.name)}
                   class={`w-full p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
                     selectedPlan === p.name
-                      ? "border-fuchsia-500 bg-fuchsia-50/40 ring-1 ring-fuchsia-300"
+                      ? "border-[#183f42] bg-[#e6f4f2]/40 ring-1 ring-[#183f42]/30"
                       : "border-zinc-200 bg-zinc-50/50 hover:bg-zinc-50"
                   }`}
                 >
@@ -200,7 +200,7 @@
                     <div class="text-[11px] text-zinc-500">{p.price} {p.period}</div>
                   </div>
                   {#if selectedPlan === p.name}
-                    <Check class="w-4 h-4 text-fuchsia-600" />
+                    <Check class="w-4 h-4 text-[#183f42]" />
                   {/if}
                 </button>
               {/each}
@@ -211,7 +211,7 @@
             <Button variant="outline" size="sm" onclick={() => (showUpgradeModal = false)} class="text-xs h-8">
               Cancel
             </Button>
-            <Button size="sm" onclick={() => (showUpgradeModal = false)} class="gradient-magenta text-white text-xs h-8 glow-magenta-xs">
+            <Button size="sm" onclick={() => (showUpgradeModal = false)} class="bg-[#183f42] text-white text-xs h-8 shadow-xs">
               Confirm Change Request
             </Button>
           </div>

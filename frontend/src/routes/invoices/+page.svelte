@@ -229,12 +229,12 @@
 
   // Standardized Status Badges (Section 3)
   const statusStyles = {
-    Draft: "bg-zinc-100 text-zinc-700 border-zinc-200",
-    Confirmed: "bg-blue-50 text-blue-700 border-blue-200",
-    Sent: "bg-indigo-50 text-indigo-700 border-indigo-200",
-    "Partially Paid": "bg-amber-50 text-amber-700 border-amber-200",
-    Paid: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Overdue: "bg-rose-50 text-rose-700 border-rose-200",
+    Draft: "bg-[#4a5568] text-white border-transparent",
+    Confirmed: "bg-[#183f42] text-white border-transparent",
+    Sent: "bg-[#2f855a] text-white border-transparent",
+    "Partially Paid": "bg-amber-100 text-amber-900 border-amber-300",
+    Paid: "bg-[#2f855a] text-white border-transparent",
+    Overdue: "bg-[#c53030] text-white border-transparent",
     Cancelled: "bg-zinc-100 text-zinc-500 border-zinc-200"
   };
 
@@ -300,7 +300,7 @@
       <div class="flex items-center justify-between">
         <button
           onclick={handleBackToList}
-          class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#717786] hover:text-[#C026D3] transition-colors"
+          class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#717786] hover:text-[#183f42] transition-colors"
         >
           <ArrowLeft class="w-3.5 h-3.5" /> Back to all invoices
         </button>
@@ -346,7 +346,7 @@
               {#if selectedInvoice.balance > 0}
                 <Button
                   size="xs"
-                  class="text-xs bg-[#C026D3] hover:bg-[#A21CAF] text-white font-semibold h-8 gap-1.5 shadow-xs"
+                  class="text-xs bg-[#183f42] hover:bg-[#123033] text-white font-semibold h-8 gap-1.5 shadow-xs"
                 >
                   <DollarSign class="w-3.5 h-3.5" /> Record Payment
                 </Button>
@@ -430,7 +430,7 @@
             </div>
             <div>
               <div class="text-[#717786]">Subscription Reference</div>
-              <div class="text-[#C026D3] font-medium hover:underline cursor-pointer">
+              <div class="text-[#183f42] font-medium hover:underline cursor-pointer">
                 {selectedInvoice.subscriptionRef}
               </div>
             </div>
@@ -572,70 +572,62 @@
             variant="default"
             size="xs"
             onclick={() => (isGenerateModalOpen = true)}
-            class="text-xs bg-[#C026D3] hover:bg-[#A21CAF] text-white font-semibold h-8 px-3.5 rounded-lg gap-1.5 shadow-xs"
+            class="text-xs bg-[#183f42] hover:bg-[#123033] text-white font-semibold h-8 px-3.5 rounded-lg gap-1.5 shadow-xs"
           >
             <Plus class="w-3.5 h-3.5" /> Generate Invoice
           </Button>
         </div>
       </div>
 
-      <!-- 2. FINANCIAL SUMMARY CARDS (Section 1B) -->
+      <!-- 2. FINANCIAL SUMMARY CARDS matching theme.jpeg -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Total Invoiced -->
-        <Card.Root class="bg-white border-[#E5E7EB] shadow-xs rounded-xl">
-          <Card.Content class="p-4">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-medium text-[#717786]">Total Invoiced</span>
-              <Receipt class="w-4 h-4 text-[#717786]" />
-            </div>
-            <div class="text-[22px] font-bold text-[#171923] tracking-tight mt-1.5">₹18,450.00</div>
-            <div class="text-[11px] text-[#16A34A] font-medium mt-1 flex items-center gap-1">
-              <span>+12.5%</span> <span class="text-[#717786] font-normal">vs last month</span>
-            </div>
-          </Card.Content>
-        </Card.Root>
+        <div class="bg-[#183f42] text-white rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xs">
+          <div class="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 self-start mb-3">
+            <Receipt class="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">₹18,450.00</div>
+            <div class="text-xs font-medium text-teal-100/90 mt-1">Total Invoiced</div>
+            <div class="text-[11px] text-teal-200/80 mt-1">+12.5% vs last month</div>
+          </div>
+        </div>
 
         <!-- Collected -->
-        <Card.Root class="bg-white border-[#E5E7EB] shadow-xs rounded-xl">
-          <Card.Content class="p-4">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-medium text-[#717786]">Collected</span>
-              <CheckCircle2 class="w-4 h-4 text-[#16A34A]" />
-            </div>
-            <div class="text-[22px] font-bold text-[#171923] tracking-tight mt-1.5">₹14,702.50</div>
-            <div class="text-[11px] text-[#16A34A] font-medium mt-1 flex items-center gap-1">
-              <span>+8.2%</span> <span class="text-[#717786] font-normal">vs last month</span>
-            </div>
-          </Card.Content>
-        </Card.Root>
+        <div class="bg-[#183f42] text-white rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xs">
+          <div class="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 self-start mb-3">
+            <CheckCircle2 class="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">₹14,702.50</div>
+            <div class="text-xs font-medium text-teal-100/90 mt-1">Collected</div>
+            <div class="text-[11px] text-teal-200/80 mt-1">+8.2% vs last month</div>
+          </div>
+        </div>
 
         <!-- Outstanding -->
-        <Card.Root class="bg-white border-[#E5E7EB] shadow-xs rounded-xl">
-          <Card.Content class="p-4">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-medium text-[#717786]">Outstanding</span>
-              <Clock class="w-4 h-4 text-[#D97706]" />
-            </div>
-            <div class="text-[22px] font-bold text-[#171923] tracking-tight mt-1.5">₹3,747.50</div>
-            <div class="text-[11px] text-[#717786] font-medium mt-1">
-              4 invoices pending
-            </div>
-          </Card.Content>
-        </Card.Root>
+        <div class="bg-[#183f42] text-white rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xs">
+          <div class="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 self-start mb-3">
+            <Clock class="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">₹3,747.50</div>
+            <div class="text-xs font-medium text-teal-100/90 mt-1">Outstanding</div>
+            <div class="text-[11px] text-teal-200/80 mt-1">4 invoices pending</div>
+          </div>
+        </div>
 
         <!-- Overdue -->
-        <Card.Root class="bg-white border-[#E5E7EB] shadow-xs rounded-xl">
-          <Card.Content class="p-4">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-medium text-[#717786]">Overdue</span>
-              <AlertCircle class="w-4 h-4 text-[#DC2626]" />
-            </div>
-            <div class="text-[22px] font-bold text-[#DC2626] tracking-tight mt-1.5">₹1,540.00</div>
-            <div class="text-[11px] text-[#DC2626] font-medium mt-1">
-              1 invoice requires attention
-            </div>
-          </Card.Content>
-        </Card.Root>
+        <div class="bg-[#183f42] text-white rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xs">
+          <div class="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 self-start mb-3">
+            <AlertCircle class="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <div class="text-xl sm:text-2xl font-bold tracking-tight text-white">₹1,540.00</div>
+            <div class="text-xs font-medium text-teal-100/90 mt-1">Overdue</div>
+            <div class="text-[11px] text-teal-200/80 mt-1">1 invoice requires attention</div>
+          </div>
+        </div>
       </div>
 
       <!-- 3. NAVIGATION TABS (Section 5 & 6) -->
@@ -644,13 +636,13 @@
           onclick={() => (activeTab = "all")}
           class={`px-3.5 py-2 text-xs font-semibold transition-all relative ${
             activeTab === 'all'
-              ? 'text-[#C026D3]'
+              ? 'text-[#183f42]'
               : 'text-[#717786] hover:text-[#171923]'
           }`}
         >
           All Invoices
           {#if activeTab === 'all'}
-            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C026D3]"></div>
+            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#183f42]"></div>
           {/if}
         </button>
 
@@ -658,13 +650,13 @@
           onclick={() => (activeTab = "payments")}
           class={`px-3.5 py-2 text-xs font-semibold transition-all relative ${
             activeTab === 'payments'
-              ? 'text-[#C026D3]'
+              ? 'text-[#183f42]'
               : 'text-[#717786] hover:text-[#171923]'
           }`}
         >
           Payments ({paymentRecords.length})
           {#if activeTab === 'payments'}
-            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C026D3]"></div>
+            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#183f42]"></div>
           {/if}
         </button>
 
@@ -672,13 +664,13 @@
           onclick={() => (activeTab = "recurring")}
           class={`px-3.5 py-2 text-xs font-semibold transition-all relative ${
             activeTab === 'recurring'
-              ? 'text-[#C026D3]'
+              ? 'text-[#183f42]'
               : 'text-[#717786] hover:text-[#171923]'
           }`}
         >
           Recurring Billing
           {#if activeTab === 'recurring'}
-            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C026D3]"></div>
+            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#183f42]"></div>
           {/if}
         </button>
 
@@ -686,13 +678,13 @@
           onclick={() => (activeTab = "transactions")}
           class={`px-3.5 py-2 text-xs font-semibold transition-all relative ${
             activeTab === 'transactions'
-              ? 'text-[#C026D3]'
+              ? 'text-[#183f42]'
               : 'text-[#717786] hover:text-[#171923]'
           }`}
         >
           Transactions
           {#if activeTab === 'transactions'}
-            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C026D3]"></div>
+            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#183f42]"></div>
           {/if}
         </button>
       </div>
@@ -710,7 +702,7 @@
                   type="text"
                   placeholder="Search by invoice or customer..."
                   bind:value={searchQuery}
-                  class="h-8 pl-8 pr-3 text-xs bg-[#F8F9FC] border-[#E5E7EB] focus:border-[#C026D3] focus:ring-1 focus:ring-[#C026D3]/20 rounded-lg text-[#171923]"
+                  class="h-8 pl-8 pr-3 text-xs bg-[#F8F9FC] border-[#E5E7EB] focus:border-[#183f42] focus:ring-1 focus:ring-[#183f42]/20 rounded-lg text-[#171923]"
                 />
               </div>
 
@@ -721,7 +713,7 @@
                   <span class="text-[11px] text-[#717786]">Status:</span>
                   <select
                     bind:value={statusFilter}
-                    class="h-8 text-xs bg-white border border-[#E5E7EB] rounded-lg px-2.5 text-[#171923] font-medium outline-none focus:border-[#C026D3]"
+                    class="h-8 text-xs bg-white border border-[#E5E7EB] rounded-lg px-2.5 text-[#171923] font-medium outline-none focus:border-[#183f42]"
                   >
                     <option value="All">All</option>
                     <option value="Paid">Paid</option>
@@ -738,7 +730,7 @@
                   <span class="text-[11px] text-[#717786]">Date:</span>
                   <select
                     bind:value={dateRangeFilter}
-                    class="h-8 text-xs bg-white border border-[#E5E7EB] rounded-lg px-2.5 text-[#171923] font-medium outline-none focus:border-[#C026D3]"
+                    class="h-8 text-xs bg-white border border-[#E5E7EB] rounded-lg px-2.5 text-[#171923] font-medium outline-none focus:border-[#183f42]"
                   >
                     <option value="All Time">All Time</option>
                     <option value="This Month">This Month</option>
@@ -752,7 +744,7 @@
                   <span class="text-[11px] text-[#717786]">Payment:</span>
                   <select
                     bind:value={paymentStatusFilter}
-                    class="h-8 text-xs bg-white border border-[#E5E7EB] rounded-lg px-2.5 text-[#171923] font-medium outline-none focus:border-[#C026D3]"
+                    class="h-8 text-xs bg-white border border-[#E5E7EB] rounded-lg px-2.5 text-[#171923] font-medium outline-none focus:border-[#183f42]"
                   >
                     <option value="All">All</option>
                     <option value="Fully Paid">Fully Paid</option>
@@ -766,7 +758,7 @@
                   <span class="text-[11px] text-[#717786]">Sort:</span>
                   <select
                     bind:value={sortBy}
-                    class="h-8 text-xs bg-white border border-[#E5E7EB] rounded-lg px-2.5 text-[#171923] font-medium outline-none focus:border-[#C026D3]"
+                    class="h-8 text-xs bg-white border border-[#E5E7EB] rounded-lg px-2.5 text-[#171923] font-medium outline-none focus:border-[#183f42]"
                   >
                     <option value="latest">Latest First</option>
                     <option value="amount-high">Amount (High to Low)</option>
@@ -809,7 +801,7 @@
                         <td class="py-3.5 px-5">
                           <button
                             onclick={() => handleOpenDetails(inv)}
-                            class="font-semibold text-[#171923] group-hover:text-[#C026D3] transition-colors inline-flex items-center gap-1 text-left"
+                            class="font-semibold text-[#171923] group-hover:text-[#183f42] transition-colors inline-flex items-center gap-1 text-left"
                             title="View Invoice Details"
                           >
                             <span>{inv.id}</span>
@@ -885,9 +877,9 @@
                               {#if inv.balance > 0}
                                 <button
                                   onclick={() => { handleOpenDetails(inv); }}
-                                  class="w-full px-3 py-1.5 text-left text-[#C026D3] hover:bg-[#FDF4FF] flex items-center gap-2 font-medium"
+                                  class="w-full px-3 py-1.5 text-left text-[#183f42] hover:bg-[#e6f4f2] flex items-center gap-2 font-medium"
                                 >
-                                  <DollarSign class="w-3.5 h-3.5 text-[#C026D3]" /> Record Payment
+                                  <DollarSign class="w-3.5 h-3.5 text-[#183f42]" /> Record Payment
                                 </button>
                               {/if}
                             </div>
@@ -998,7 +990,7 @@
                 Subscriptions scheduled for automated invoice generation.
               </Card.Description>
             </div>
-            <Button variant="default" size="xs" class="text-xs bg-[#C026D3] hover:bg-[#A21CAF] text-white gap-1 font-semibold">
+            <Button variant="default" size="xs" class="text-xs bg-[#183f42] hover:bg-[#123033] text-white gap-1 font-semibold">
               <Plus class="w-3.5 h-3.5" /> New Schedule
             </Button>
           </Card.Header>
@@ -1135,7 +1127,7 @@
           <Button variant="outline" size="xs" onclick={() => (isGenerateModalOpen = false)}>
             Cancel
           </Button>
-          <Button type="submit" size="xs" class="bg-[#C026D3] hover:bg-[#A21CAF] text-white font-semibold shadow-xs">
+          <Button type="submit" size="xs" class="bg-[#183f42] hover:bg-[#123033] text-white font-semibold shadow-xs">
             Generate & Issue Invoice
           </Button>
         </div>

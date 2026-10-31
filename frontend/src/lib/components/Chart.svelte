@@ -5,7 +5,7 @@
   Chart.register(...registerables);
 
   let {
-    type = "line",
+    type = "bar",
     data = { labels: [], datasets: [] },
     height = 240
   } = $props();
@@ -17,29 +17,17 @@
     if (!canvasEl) return;
     if (chart) chart.destroy();
 
-    const ctx = canvasEl.getContext("2d");
-    let gradientFill = "rgba(192, 38, 211, 0.06)";
-    if (ctx) {
-      const gradient = ctx.createLinearGradient(0, 0, 0, height);
-      gradient.addColorStop(0, "rgba(192, 38, 211, 0.22)");
-      gradient.addColorStop(1, "rgba(192, 38, 211, 0.01)");
-      gradientFill = gradient;
-    }
+    const colors = ["#2a9d8f", "#e76f51", "#183f42", "#f4a261"];
 
     const styledData = {
       ...data,
-      datasets: (data.datasets || []).map(ds => ({
+      datasets: (data.datasets || []).map((ds, idx) => ({
         ...ds,
-        borderColor: ds.borderColor || "#c026d3",
-        backgroundColor: gradientFill,
-        pointBackgroundColor: "#c026d3",
-        pointBorderColor: "#ffffff",
-        pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        fill: true,
-        tension: 0.35,
-        borderWidth: 2.5
+        backgroundColor: ds.backgroundColor || colors[idx % colors.length],
+        borderRadius: 4,
+        barPercentage: 0.6,
+        categoryPercentage: 0.5,
+        borderWidth: 0
       }))
     };
 
@@ -51,36 +39,44 @@
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: true,
-            position: "top",
-            align: "end",
-            labels: {
-              boxWidth: 8,
-              boxHeight: 8,
-              usePointStyle: true,
-              color: "#71717a",
-              font: { size: 11, family: "inherit", weight: "500" }
-            }
+            display: false
           },
           tooltip: {
-            backgroundColor: "#18181b",
+            backgroundColor: "#183f42",
             titleFont: { size: 11, weight: "bold" },
             bodyFont: { size: 11 },
             padding: 10,
             cornerRadius: 8,
-            borderColor: "rgba(217, 70, 239, 0.3)",
-            borderWidth: 1
+            callbacks: {
+              label: (context) => {
+                const label = context.dataset.label || "";
+                const val = context.raw;
+                return `${label}: $${val.toLocaleString()}`;
+              }
+            }
           }
         },
         scales: {
           x: {
             grid: { display: false },
-            ticks: { color: "#a1a1aa", font: { size: 10 } }
+            ticks: {
+              color: "#8c9ba5",
+              font: { size: 11 }
+            }
           },
           y: {
-            grid: { color: "rgba(244, 244, 245, 0.8)" },
-            border: { dash: [4, 4] },
-            ticks: { color: "#a1a1aa", font: { size: 10 } }
+            grid: {
+              color: "rgba(0,0,0,0.04)",
+              drawBorder: false
+            },
+            ticks: {
+              color: "#8c9ba5",
+              font: { size: 11 },
+              callback: (val) => {
+                if (val >= 1000) return `$${val / 1000}k`;
+                return `$${val}`;
+              }
+            }
           }
         }
       }
@@ -88,7 +84,9 @@
   }
 
   $effect(() => {
-    if (data && canvasEl) render();
+    if (data && canvasEl) {
+      render();
+    }
   });
 
   onMount(() => {
@@ -100,6 +98,6 @@
   });
 </script>
 
-<div class="relative w-full" style={`height: ${height}px;`}>
+<div class="relative w-full" style="height: {height}px;">
   <canvas bind:this={canvasEl}></canvas>
 </div>

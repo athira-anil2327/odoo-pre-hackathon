@@ -86,7 +86,7 @@
       <Button
         onclick={() => (showAddModal = true)}
         size="sm"
-        class="gradient-magenta text-white glow-magenta-xs text-xs h-8"
+        class="bg-[#183f42] text-white shadow-xs text-xs h-8"
       >
         <Plus class="w-3.5 h-3.5 mr-1" /> Add Payment Method
       </Button>
@@ -95,7 +95,7 @@
     <!-- Auto Renew Banner -->
     <div class="p-5 rounded-2xl bg-white border border-zinc-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div class="flex items-center gap-3.5">
-        <div class="w-10 h-10 rounded-xl gradient-magenta text-white flex items-center justify-center shrink-0 shadow-xs">
+        <div class="w-10 h-10 rounded-xl bg-[#183f42] text-white flex items-center justify-center shrink-0 shadow-xs">
           <ShieldCheck class="w-5 h-5" />
         </div>
         <div>
@@ -111,7 +111,7 @@
         <button
           onclick={() => (autoRenew = !autoRenew)}
           class={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-            autoRenew ? 'bg-fuchsia-600' : 'bg-zinc-200'
+            autoRenew ? 'bg-[#183f42]' : 'bg-zinc-200'
           }`}
           role="switch"
           aria-checked={autoRenew}
@@ -133,7 +133,7 @@
         {#each paymentMethods as card}
           <div class={`p-5 rounded-2xl bg-white border transition-all ${
             card.isDefault
-              ? "border-fuchsia-400 shadow-md ring-1 ring-fuchsia-200"
+              ? "border-[#183f42] shadow-md ring-1 ring-[#bde4df]"
               : "border-zinc-200/80 shadow-xs hover:border-zinc-300"
           }`}>
             <div class="flex items-center justify-between mb-4">
@@ -144,7 +144,7 @@
                 <span class="font-bold text-sm text-zinc-900">{card.brand}</span>
               </div>
               {#if card.isDefault}
-                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200">
+                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#e6f4f2] text-[#143e42] border border-[#bde4df]">
                   Default
                 </span>
               {/if}
@@ -169,7 +169,7 @@
               {#if !card.isDefault}
                 <button
                   onclick={() => setDefault(card.id)}
-                  class="text-xs font-semibold text-fuchsia-600 hover:text-fuchsia-700 transition-colors"
+                  class="text-xs font-semibold text-[#183f42] hover:text-[#143e42] transition-colors"
                 >
                   Set as Default
                 </button>
@@ -195,7 +195,7 @@
     <!-- Corporate Tax & Billing Profile -->
     <Card.Root class="bg-white border-zinc-200/80 shadow-xs rounded-xl overflow-hidden p-5">
       <div class="flex items-center gap-2 mb-4">
-        <Building class="w-4 h-4 text-fuchsia-600" />
+        <Building class="w-4 h-4 text-[#183f42]" />
         <h3 class="text-sm font-bold text-zinc-900">Billing Address & Tax Registration</h3>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -219,7 +219,7 @@
         <div class="bg-white rounded-2xl border border-zinc-200 shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           <div class="p-4 border-b border-zinc-100 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <CreditCard class="w-4 h-4 text-fuchsia-600" />
+              <CreditCard class="w-4 h-4 text-[#183f42]" />
               <h3 class="text-sm font-bold text-zinc-900">Add Payment Card</h3>
             </div>
             <button onclick={() => (showAddModal = false)} class="p-1 rounded-md text-zinc-400 hover:text-zinc-600">
@@ -270,7 +270,7 @@
             <Button variant="outline" size="sm" onclick={() => (showAddModal = false)} class="text-xs h-8">
               Cancel
             </Button>
-            <Button size="sm" onclick={handleAddCard} class="gradient-magenta text-white text-xs h-8 glow-magenta-xs">
+            <Button size="sm" onclick={handleAddCard} class="bg-[#183f42] text-white text-xs h-8 shadow-xs">
               Save Card
             </Button>
           </div>

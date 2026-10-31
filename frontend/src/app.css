@@ -27,43 +27,83 @@
 }
 
 :root {
-  --background: #F8F9FC;
-  --foreground: #171923;
-  --card: #FFFFFF;
-  --card-foreground: #171923;
-  --popover: #FFFFFF;
-  --popover-foreground: #171923;
-  --primary: #C026D3; /* Primary Accent Magenta */
+  /* Theme Palette from theme.jpeg */
+  --backdrop: #234b4f; /* Outer Dark Slate Teal */
+  --primary: #183f42; /* Main Brand Dark Teal / Petrol */
+  --primary-hover: #123033;
   --primary-foreground: #FFFFFF;
-  --secondary: #F1F5F9; /* Refined Grey */
-  --secondary-foreground: #171923;
-  --muted: #F8F9FC;
-  --muted-foreground: #717786;
-  --accent: #FDF4FF;
-  --accent-foreground: #A21CAF;
+  --accent-mint: #e6f4f2; /* Active Nav & Light Badge */
+  --accent-mint-foreground: #143e42;
+  --chart-teal: #2a9d8f;
+  --chart-coral: #e76f51;
+
+  --background: #f8fafb;
+  --foreground: #122b2e;
+  --card: #FFFFFF;
+  --card-foreground: #122b2e;
+  --popover: #FFFFFF;
+  --popover-foreground: #122b2e;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #122b2e;
+  --muted: #f4f7f8;
+  --muted-foreground: #627b80;
+  --accent: #e6f4f2;
+  --accent-foreground: #143e42;
   --destructive: #DC2626;
   --destructive-foreground: #FFFFFF;
-  --border: #E5E7EB; /* Clean Subtle Grey Border */
-  --input: #E5E7EB;
-  --ring: #C026D3;
-  --radius: 0.5rem;
+  --border: #E6EBED;
+  --input: #E6EBED;
+  --ring: #183f42;
+  --radius: 0.75rem;
 }
 
 body {
-  background-color: var(--background);
+  background-color: var(--backdrop);
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  min-height: 100vh;
 }
 
-/* Primary Magenta Gradient */
-.gradient-magenta {
-  background: linear-gradient(135deg, #C026D3 0%, #DB2777 100%);
+/* Custom Theme Utility Classes */
+.bg-theme-backdrop {
+  background-color: #234b4f;
 }
 
-.gradient-magenta-hover:hover {
-  background: linear-gradient(135deg, #A21CAF 0%, #BE185D 100%);
+.bg-theme-primary {
+  background-color: #183f42;
+}
+
+.bg-theme-primary-hover:hover {
+  background-color: #112e31;
+}
+
+.bg-theme-mint {
+  background-color: #e6f4f2;
+}
+
+.text-theme-mint {
+  color: #143e42;
+}
+
+.text-theme-primary {
+  color: #183f42;
+}
+
+.border-theme-mint {
+  border-color: #bde4df;
+}
+
+/* Legacy helpers mapped to theme */
+.gradient-magenta,
+.gradient-teal {
+  background-color: #183f42;
+}
+
+.gradient-magenta-hover:hover,
+.gradient-teal-hover:hover {
+  background-color: #112e31;
 }
 
 .glow-magenta-xs {
-  box-shadow: 0 1px 3px 0 rgba(192, 38, 211, 0.2);
+  box-shadow: 0 1px 3px 0 rgba(24, 63, 66, 0.2);
 }
