@@ -759,7 +759,7 @@ export function addTemplate(tmplData) {
 // -------------------------------------------------------------
 // QUOTATION CREATION & STATE MACHINE
 // -------------------------------------------------------------
-export function createQuotationFromTemplate(templateId, customerId, customLines = null) {
+export function createQuotationFromTemplate(templateId, customerId, customLines = null, options = {}) {
   let template = null;
   templatesStore.subscribe(val => {
     template = val.find(t => t.id === templateId);
@@ -770,8 +770,9 @@ export function createQuotationFromTemplate(templateId, customerId, customLines 
   }
 
   const today = new Date().toISOString().split("T")[0];
-  const validUntil = addDays(today, template.validity_days);
+  const validUntil = options.validUntil || addDays(today, template.validity_days || 30);
   const quoteNumber = `QUO-2026-${Math.floor(100 + Math.random() * 900)}`;
+  const status = options.status || "Draft";
 
   let linesToProcess = customLines || template.lines;
   let subtotal = 0;
@@ -803,8 +804,10 @@ export function createQuotationFromTemplate(templateId, customerId, customLines 
     };
   });
 
-  const taxAmount = subtotal * 0.18;
-  const totalAmount = subtotal + taxAmount;
+  const discountAmount = Number(options.discountAmount || 0);
+  const taxableBase = Math.max(0, subtotal - discountAmount);
+  const taxAmount = taxableBase * 0.18;
+  const totalAmount = taxableBase + taxAmount;
 
   const newQuote = {
     id: quoteNumber,
@@ -814,11 +817,11 @@ export function createQuotationFromTemplate(templateId, customerId, customLines 
     template_id: templateId,
     issue_date: today,
     valid_until: validUntil,
-    status: "Draft",
+    status: status,
     subtotal: Number(subtotal.toFixed(2)),
     tax_rate: 18.00,
     tax_amount: Number(taxAmount.toFixed(2)),
-    discount_amount: 0.00,
+    discount_amount: Number(discountAmount.toFixed(2)),
     total_amount: Number(totalAmount.toFixed(2)),
     converted_subscription_id: null,
     lines: processedLines
@@ -859,11 +862,16 @@ export function createQuotationFromTemplate(templateId, customerId, customLines 
                   ...q,
                   id: saved.id,
                   quote_number: saved.quotation_number || saved.quote_number,
-                  quotation_number: saved.quotation_number || saved.quote_number
+                  quotation_number: saved.quotation_number || saved.quote_number,
+                  status: status
                 }
               : q
           )
         );
+
+        if (status === "Quotation") {
+          quotationsApi.send(saved.id).catch(e => console.warn("Backend send quote notice:", e));
+        }
       }
     }).catch(err => console.warn("Backend quotation persist notice:", err));
   }

@@ -38,7 +38,9 @@
     Sparkles,
     ArrowRight,
     Building2,
-    Package
+    Package,
+    Percent,
+    ShieldAlert
   } from "lucide-svelte";
 
   // Tab: "quotations" or "templates"
@@ -65,18 +67,221 @@
   let actionError = $state("");
   let actionSuccess = $state("");
 
-  // Create Quote from Template Form
-  let selectedTemplateId = $state("");
+  // =========================================================================
+  // 1. CREATE QUOTATION FROM TEMPLATE STATE (Interactive Proposal Builder)
+  // =========================================================================
   let selectedCustomerId = $state("");
+  let selectedTemplateId = $state("");
+  let quotePlanId = $state("");
+  let quoteValidUntil = $state("");
+  let quoteDiscountType = $state("percentage"); // "percentage" | "fixed"
+  let quoteDiscountValue = $state(0);
+  let quoteLines = $state([]);
 
-  // New Template Form State
+  function loadTemplateIntoQuote(tmplId) {
+    selectedTemplateId = tmplId;
+    const tmpl = ($templatesStore || []).find(t => t.id === tmplId);
+    if (!tmpl) return;
+
+    quotePlanId = tmpl.plan_id;
+    const today = new Date().toISOString().split("T")[0];
+    quoteValidUntil = addDays(today, Number(tmpl.validity_days) || 30);
+
+    // Load template's product lines into editable quote lines
+    quoteLines = (tmpl.lines || []).filter(Boolean).map(l => {
+      const prod = ($productsStore || []).find(p => p.id === l.product_id);
+      const v = prod?.variants?.find(vr => vr.id === l.variant_id);
+      return {
+        product_id: l.product_id,
+        product_name: l.product_name || prod?.name || "Product",
+        variant_id: l.variant_id || "",
+        variant_name: l.variant_name || (v ? `${v.attribute_name}: ${v.attribute_value}` : "None"),
+        quantity: Number(l.quantity) || 1,
+        unit_price: Number(l.unit_price) || Number(prod?.sales_price) || 0,
+        price_extra: Number(l.price_extra || l.variant_price_extra || v?.price_extra) || 0
+      };
+    });
+
+    if (quoteLines.length === 0 && $productsStore && $productsStore.length > 0) {
+      handleAddQuoteLine();
+    }
+  }
+
+  function handleOpenCreateModal(preselectedTmplId = null) {
+    actionError = "";
+    actionSuccess = "";
+
+    if ($customersStore && $customersStore.length > 0) {
+      selectedCustomerId = $customersStore[0].id;
+    }
+
+    const tmplId = preselectedTmplId || ($templatesStore && $templatesStore.length > 0 ? $templatesStore[0].id : "");
+    loadTemplateIntoQuote(tmplId);
+    quoteDiscountValue = 0;
+    showCreateModal = true;
+  }
+
+  function handleAddQuoteLine() {
+    const prod = $productsStore && $productsStore.length > 0 ? $productsStore[0] : null;
+    const v = prod?.variants?.length > 0 ? prod.variants[0] : null;
+
+    quoteLines = [
+      ...quoteLines,
+      {
+        product_id: prod ? prod.id : "",
+        product_name: prod ? prod.name : "Product",
+        variant_id: v ? v.id : "",
+        variant_name: v ? `${v.attribute_name}: ${v.attribute_value}` : "None",
+        quantity: 1,
+        unit_price: prod ? Number(prod.sales_price || 0) : 0,
+        price_extra: v ? Number(v.price_extra || 0) : 0
+      }
+    ];
+  }
+
+  function handleRemoveQuoteLine(index) {
+    if (quoteLines.length > 1) {
+      quoteLines = quoteLines.filter((_, i) => i !== index);
+    } else {
+      actionError = "A quotation must have at least one product line.";
+    }
+  }
+
+  function handleQuoteProductChange(index, productId) {
+    if (!quoteLines[index]) return;
+    const prod = ($productsStore || []).find(p => p.id === productId);
+    if (!prod) return;
+
+    quoteLines[index].product_id = prod.id;
+    quoteLines[index].product_name = prod.name;
+    quoteLines[index].unit_price = Number(prod.sales_price || 0);
+
+    if (prod.variants && prod.variants.length > 0) {
+      const v = prod.variants[0];
+      quoteLines[index].variant_id = v.id;
+      quoteLines[index].variant_name = `${v.attribute_name}: ${v.attribute_value}`;
+      quoteLines[index].price_extra = Number(v.price_extra || 0);
+    } else {
+      quoteLines[index].variant_id = "";
+      quoteLines[index].variant_name = "None";
+      quoteLines[index].price_extra = 0;
+    }
+  }
+
+  function handleQuoteVariantChange(index, variantId) {
+    if (!quoteLines[index]) return;
+    const line = quoteLines[index];
+    const prod = ($productsStore || []).find(p => p.id === line.product_id);
+    if (!prod) return;
+
+    if (!variantId) {
+      line.variant_id = "";
+      line.variant_name = "None";
+      line.price_extra = 0;
+      return;
+    }
+
+    const v = prod.variants?.find(vr => vr.id === variantId);
+    if (v) {
+      line.variant_id = v.id;
+      line.variant_name = `${v.attribute_name}: ${v.attribute_value}`;
+      line.price_extra = Number(v.price_extra || 0);
+    }
+  }
+
+  // Live Calculations for Quotation Builder
+  const quoteSubtotal = $derived(
+    (quoteLines || []).reduce((acc, l) => {
+      if (!l) return acc;
+      const eff = (Number(l.unit_price) || 0) + (Number(l.price_extra) || 0);
+      return acc + (Number(l.quantity) || 1) * eff;
+    }, 0)
+  );
+
+  const quoteDiscountAmount = $derived.by(() => {
+    const val = Number(quoteDiscountValue) || 0;
+    if (val <= 0) return 0;
+    if (quoteDiscountType === "percentage") {
+      return (quoteSubtotal * (val / 100));
+    }
+    return Math.min(quoteSubtotal, val);
+  });
+
+  const quoteTaxableBase = $derived(Math.max(0, quoteSubtotal - quoteDiscountAmount));
+  const quoteTaxAmount = $derived(quoteTaxableBase * 0.18);
+  const quoteTotalAmount = $derived(quoteTaxableBase + quoteTaxAmount);
+
+  const activeCustomer = $derived(
+    ($customersStore || []).find(c => c.id === selectedCustomerId || c.customer_number === selectedCustomerId)
+  );
+
+  const activeTemplate = $derived(
+    ($templatesStore || []).find(t => t.id === selectedTemplateId)
+  );
+
+  const activePlan = $derived(
+    getPlanObject(activeTemplate?.plan_id || quotePlanId)
+  );
+
+  function handleSaveQuoteAction(statusToSet = "Draft") {
+    actionError = "";
+    if (!selectedCustomerId) {
+      actionError = "Please select a target customer.";
+      return;
+    }
+    if (!selectedTemplateId) {
+      actionError = "Please select a quotation template.";
+      return;
+    }
+    if (quoteLines.length === 0) {
+      actionError = "Please add at least one product line.";
+      return;
+    }
+    if (!quoteValidUntil) {
+      actionError = "Please specify a quotation validity date.";
+      return;
+    }
+
+    // Verify all lines have a product selected
+    for (let i = 0; i < quoteLines.length; i++) {
+      if (!quoteLines[i].product_id) {
+        actionError = `Please select a product for Line ${i + 1}.`;
+        return;
+      }
+    }
+
+    try {
+      const q = createQuotationFromTemplate(
+        selectedTemplateId,
+        selectedCustomerId,
+        quoteLines,
+        {
+          validUntil: quoteValidUntil,
+          discountAmount: quoteDiscountAmount,
+          status: statusToSet
+        }
+      );
+
+      actionSuccess = statusToSet === "Quotation"
+        ? `Quotation ${q.quote_number || q.id} created and dispatched to ${activeCustomer?.name || 'customer'}! Status: Quotation (Sent).`
+        : `Quotation ${q.quote_number || q.id} saved as Draft.`;
+
+      showCreateModal = false;
+      activeTab = "quotations";
+    } catch (e) {
+      actionError = e.message || "Failed to create quotation.";
+    }
+  }
+
+  // =========================================================================
+  // 2. CREATE QUOTATION TEMPLATE STATE
+  // =========================================================================
   let newTmplName = $state("");
   let newTmplPlanId = $state("");
   let newTmplValidityDays = $state(30);
   let newTmplDesc = $state("");
   let newTmplLines = $state([]);
 
-  // Auto-initialize first template line when opening modal
   function openNewTemplateModal() {
     actionError = "";
     actionSuccess = "";
@@ -88,7 +293,6 @@
       newTmplPlanId = $plansStore[0].id;
     }
 
-    // Default to first product in catalogue
     const firstProd = $productsStore && $productsStore.length > 0 ? $productsStore[0] : null;
     const firstVariant = firstProd?.variants?.length > 0 ? firstProd.variants[0] : null;
 
@@ -175,7 +379,6 @@
     }
   }
 
-  // Live calculation for template total
   const newTmplSubtotal = $derived(
     (newTmplLines || []).reduce((acc, line) => {
       if (!line) return acc;
@@ -201,7 +404,6 @@
       return;
     }
 
-    // Validate each line has a product selected
     for (let i = 0; i < newTmplLines.length; i++) {
       if (!newTmplLines[i].product_id) {
         actionError = `Please select a product for Line ${i + 1}.`;
@@ -226,76 +428,9 @@
     }
   }
 
-  // Open "Create Quote from Template" modal
-  function handleOpenCreateModal(preselectedTmplId = null) {
-    actionError = "";
-    actionSuccess = "";
-
-    if (preselectedTmplId) {
-      selectedTemplateId = preselectedTmplId;
-    } else if ($templatesStore && $templatesStore.length > 0) {
-      selectedTemplateId = $templatesStore[0].id;
-    }
-
-    if ($customersStore && $customersStore.length > 0) {
-      selectedCustomerId = $customersStore[0].id;
-    }
-
-    showCreateModal = true;
-  }
-
-  // Active template selected in create quote modal
-  const activeSelectedTemplate = $derived(
-    ($templatesStore || []).find(t => t.id === selectedTemplateId)
-  );
-
-  // Calculated validity date for the quote
-  const calculatedValidUntil = $derived.by(() => {
-    if (!activeSelectedTemplate) return "";
-    const today = new Date().toISOString().split("T")[0];
-    return addDays(today, activeSelectedTemplate.validity_days || 30);
-  });
-
-  // Calculated preview lines for the quote
-  const previewQuoteLines = $derived.by(() => {
-    if (!activeSelectedTemplate || !Array.isArray(activeSelectedTemplate.lines)) return [];
-    return activeSelectedTemplate.lines.filter(Boolean).map(line => {
-      const qty = Number(line.quantity) || 1;
-      const base = Number(line.unit_price) || 0;
-      const extra = Number(line.price_extra || line.variant_price_extra) || 0;
-      const eff = base + extra;
-      const subtotal = qty * eff;
-      return {
-        ...line,
-        qty,
-        eff,
-        subtotal
-      };
-    });
-  });
-
-  const previewQuoteSubtotal = $derived(
-    (previewQuoteLines || []).reduce((acc, l) => acc + (l.subtotal || 0), 0)
-  );
-  const previewQuoteTax = $derived(previewQuoteSubtotal * 0.18);
-  const previewQuoteTotal = $derived(previewQuoteSubtotal + previewQuoteTax);
-
-  function handleInstantiateQuote() {
-    actionError = "";
-    if (!selectedTemplateId || !selectedCustomerId) {
-      actionError = "Please select both a quotation template and a customer.";
-      return;
-    }
-    try {
-      const q = createQuotationFromTemplate(selectedTemplateId, selectedCustomerId);
-      actionSuccess = `Quotation ${q.quote_number || q.id} generated from template with auto-calculated line items and validity date (${q.valid_until}).`;
-      showCreateModal = false;
-      activeTab = "quotations";
-    } catch (e) {
-      actionError = e.message;
-    }
-  }
-
+  // =========================================================================
+  // 3. LIFECYCLE ACTIONS (Send & Confirm)
+  // =========================================================================
   function handleSendQuote(quoteId) {
     actionError = "";
     sendQuotation(quoteId);
@@ -355,7 +490,7 @@
       <div>
         <h2 class="text-base font-bold text-[#122b2e] tracking-tight">Quotations &amp; Proposals</h2>
         <p class="text-xs text-[#7e9599] mt-0.5">
-          Build reusable quotation templates with custom product variants and price overrides, instantiate client proposals, and confirm into active contracts.
+          Build template-driven proposals, modify quantities and variants, apply smart discounts, and dispatch formal quotes to customers.
         </p>
       </div>
 
@@ -534,7 +669,7 @@
       </Card.Root>
 
     <!-- ========================================================================= -->
-    <!-- TAB 2: QUOTATION TEMPLATES                                                -->
+    <!-- TAB 2: QUOTATION TEMPLATES CATALOG                                        -->
     <!-- ========================================================================= -->
     {:else}
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -640,6 +775,328 @@
     {/if}
   </div>
 </AppShell>
+
+<!-- ========================================================================= -->
+<!-- MODAL: INTERACTIVE QUOTATION PROPOSAL BUILDER (10-Step Workflow)          -->
+<!-- ========================================================================= -->
+{#if showCreateModal}
+  <div class="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl border border-zinc-200 shadow-2xl max-w-2xl w-full p-6 text-xs animate-in fade-in zoom-in-95 duration-150 my-6">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-[#edf2f3] mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-[#e6f4f2] text-[#183f42] flex items-center justify-center shadow-xs">
+            <HeartHandshake class="w-4 h-4" />
+          </div>
+          <div>
+            <h3 class="font-bold text-[#122b2e] text-sm">Create Quotation from Template</h3>
+            <p class="text-[11px] text-[#7e9599]">Select customer, load template plan &amp; products, customize quantities, variants &amp; discounts, then save or send.</p>
+          </div>
+        </div>
+        <button onclick={() => (showCreateModal = false)} class="p-1 rounded text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100">
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+
+      <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+        
+        <!-- Step 1 & 2: Select Customer & Select Template -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-[#f8fafb] border border-[#e5ecee] rounded-xl">
+          <div>
+            <Label for="q-cust" class="font-semibold text-[#122b2e] flex items-center gap-1.5">
+              <Building2 class="w-3.5 h-3.5 text-[#183f42]" /> 1. Target Customer *
+            </Label>
+            <select
+              id="q-cust"
+              bind:value={selectedCustomerId}
+              class="w-full h-9 bg-white border border-[#e5ecee] rounded-xl px-2.5 mt-1 text-xs focus:border-[#183f42]"
+            >
+              {#each ($customersStore || []) as c}
+                <option value={c.id}>{c.name} — {c.company}</option>
+              {/each}
+            </select>
+            {#if activeCustomer}
+              <div class="text-[10px] text-[#7e9599] mt-1">
+                ID: <b>{activeCustomer.customer_number || activeCustomer.id}</b> • {activeCustomer.email}
+              </div>
+            {/if}
+          </div>
+
+          <div>
+            <Label for="q-tmpl" class="font-semibold text-[#122b2e] flex items-center gap-1.5">
+              <Layers class="w-3.5 h-3.5 text-[#183f42]" /> 2. Quotation Template *
+            </Label>
+            <select
+              id="q-tmpl"
+              value={selectedTemplateId}
+              onchange={(e) => loadTemplateIntoQuote(e.target.value)}
+              class="w-full h-9 bg-white border border-[#e5ecee] rounded-xl px-2.5 mt-1 text-xs focus:border-[#183f42]"
+            >
+              {#each ($templatesStore || []) as t}
+                <option value={t.id}>{t.name} ({t.validity_days || 30} Days)</option>
+              {/each}
+            </select>
+            {#if activePlan}
+              <div class="text-[10px] text-[#183f42] font-semibold mt-1 flex items-center gap-1">
+                <Repeat class="w-3 h-3" />
+                Plan: <b>{activePlan.name}</b> ({activePlan.billing_frequency} • Min Qty: {activePlan.min_quantity})
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Step 3: Set Quotation Validity -->
+        <div class="p-3 bg-[#f8fafb] border border-[#e5ecee] rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+          <div>
+            <Label for="q-validity" class="font-semibold text-[#122b2e] flex items-center gap-1.5">
+              <Clock class="w-3.5 h-3.5 text-[#183f42]" /> 3. Quotation Validity Expiry Date *
+            </Label>
+            <p class="text-[10px] text-[#7e9599] mt-0.5">Pre-filled from template validity window. You may override with a custom expiry date.</p>
+          </div>
+          <div>
+            <Input
+              id="q-validity"
+              type="date"
+              bind:value={quoteValidUntil}
+              class="h-9 text-xs bg-white border-[#e5ecee] rounded-xl w-44 focus:border-[#183f42]"
+            />
+          </div>
+        </div>
+
+        <!-- Step 4, 5 & 6: Products, Quantities, Variants & Add/Remove Lines -->
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-[#8c9ba5] uppercase tracking-wider">
+              4. Product Lines &amp; Variant Selections
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onclick={handleAddQuoteLine}
+              class="rounded-xl h-7 text-[11px] border-[#183f42] text-[#183f42] hover:bg-[#e6f4f2] gap-1 font-semibold"
+            >
+              <Plus class="w-3 h-3" /> Add Product Line
+            </Button>
+          </div>
+
+          <div class="space-y-2.5">
+            {#each (quoteLines || []) as line, idx}
+              {@const prod = ($productsStore || []).find(p => p.id === line.product_id)}
+              {@const hasVariants = prod && prod.variants && prod.variants.length > 0}
+              {@const effUnitPrice = (Number(line.unit_price) || 0) + (Number(line.price_extra) || 0)}
+              {@const lineTotal = (Number(line.quantity) || 1) * effUnitPrice}
+
+              <div class="p-3.5 bg-white border border-[#edf2f3] shadow-xs rounded-xl space-y-2.5 relative">
+                <div class="flex items-center justify-between pb-1.5 border-b border-[#f4f7f8]">
+                  <span class="font-bold text-[#122b2e] text-[11px] flex items-center gap-1.5">
+                    <Package class="w-3.5 h-3.5 text-[#183f42]" /> Line {idx + 1}
+                  </span>
+                  {#if quoteLines.length > 1}
+                    <button
+                      type="button"
+                      onclick={() => handleRemoveQuoteLine(idx)}
+                      class="text-zinc-400 hover:text-rose-600 p-1 rounded-md transition-colors"
+                      title="Remove Line"
+                    >
+                      <Trash2 class="w-3.5 h-3.5" />
+                    </button>
+                  {/if}
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <!-- Product Catalogue Selector -->
+                  <div>
+                    <Label class="text-[11px] font-semibold text-[#122b2e]">Product *</Label>
+                    <select
+                      value={line.product_id}
+                      onchange={(e) => handleQuoteProductChange(idx, e.target.value)}
+                      class="w-full h-8 bg-[#f8fafb] border border-[#e5ecee] rounded-lg px-2 mt-1 text-xs focus:border-[#183f42]"
+                    >
+                      {#each ($productsStore || []) as p}
+                        <option value={p.id}>{p.name} (${Number(p.sales_price || 0).toFixed(2)})</option>
+                      {/each}
+                    </select>
+                  </div>
+
+                  <!-- Variant Selector with Surcharge Calculation -->
+                  <div>
+                    <Label class="text-[11px] font-semibold text-[#122b2e]">Variant &amp; Surcharge</Label>
+                    {#if hasVariants}
+                      <select
+                        value={line.variant_id}
+                        onchange={(e) => handleQuoteVariantChange(idx, e.target.value)}
+                        class="w-full h-8 bg-[#f8fafb] border border-[#e5ecee] rounded-lg px-2 mt-1 text-xs focus:border-[#183f42]"
+                      >
+                        <option value="">No Variant / Base ($0.00)</option>
+                        {#each prod.variants as v}
+                          <option value={v.id}>
+                            {v.attribute_name}: {v.attribute_value} (+${Number(v.price_extra || 0).toFixed(2)})
+                          </option>
+                        {/each}
+                      </select>
+                    {:else}
+                      <div class="h-8 bg-[#f8fafb] border border-[#edf2f3] rounded-lg px-2.5 mt-1 flex items-center text-[10px] text-[#7e9599]">
+                        Standard product (No variants configured)
+                      </div>
+                    {/if}
+                  </div>
+                </div>
+
+                <!-- Quantity & Pricing Override -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                  <div>
+                    <Label class="text-[11px] font-semibold text-[#122b2e]">Quantity *</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      bind:value={line.quantity}
+                      class="h-8 text-xs mt-1 bg-[#f8fafb] border-[#e5ecee] rounded-lg focus:border-[#183f42]"
+                    />
+                  </div>
+
+                  <div>
+                    <div class="flex items-center justify-between">
+                      <Label class="text-[11px] font-semibold text-[#122b2e]">Unit Price ($)</Label>
+                      <span class="text-[9px] text-[#7e9599]">Base: ${Number(prod?.sales_price || 0).toFixed(2)}</span>
+                    </div>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      bind:value={line.unit_price}
+                      class="h-8 text-xs mt-1 bg-[#f8fafb] border-[#e5ecee] rounded-lg focus:border-[#183f42]"
+                    />
+                  </div>
+
+                  <div class="p-2 bg-[#f8fafb] border border-[#e5ecee] rounded-lg text-right">
+                    <span class="text-[10px] text-[#7e9599] block">
+                      Effective: ${effUnitPrice.toFixed(2)}
+                      {#if line.price_extra > 0}
+                        <span class="text-teal-700 font-semibold">(+${Number(line.price_extra).toFixed(2)})</span>
+                      {/if}
+                    </span>
+                    <span class="font-extrabold text-[#183f42] text-xs">
+                      Line Subtotal: ${lineTotal.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            {/each}
+          </div>
+        </div>
+
+        <!-- Step 7: Smart Discounts Configuration -->
+        <div class="p-3.5 bg-[#f8fafb] border border-[#e5ecee] rounded-xl space-y-2">
+          <span class="text-[10px] font-bold text-[#8c9ba5] uppercase tracking-wider block">
+            5. Proposal Discounts &amp; Pricing Incentives
+          </span>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+            <div>
+              <Label class="text-[11px] font-semibold text-[#122b2e]">Discount Type</Label>
+              <select
+                bind:value={quoteDiscountType}
+                class="w-full h-8 bg-white border border-[#e5ecee] rounded-lg px-2 mt-1 text-xs focus:border-[#183f42]"
+              >
+                <option value="percentage">Percentage Discount (%)</option>
+                <option value="fixed">Fixed Dollar Discount ($)</option>
+              </select>
+            </div>
+
+            <div>
+              <Label class="text-[11px] font-semibold text-[#122b2e]">
+                Discount Value {quoteDiscountType === 'percentage' ? '(%)' : '($)'}
+              </Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.5"
+                bind:value={quoteDiscountValue}
+                placeholder="0"
+                class="h-8 text-xs mt-1 bg-white border-[#e5ecee] rounded-lg focus:border-[#183f42]"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 8: Price, Discount & Tax Calculation Breakdown -->
+        <div class="p-3.5 bg-[#f8fafb] border border-[#bde4df] rounded-xl space-y-2 text-xs">
+          <div class="font-bold text-[#122b2e] flex items-center justify-between">
+            <span>Summary &amp; Automated Tax Calculation:</span>
+            <span class="text-[10px] bg-[#e6f4f2] text-[#143e42] px-2 py-0.5 rounded border border-[#bde4df]">
+              Standard 18% GST/VAT Applied
+            </span>
+          </div>
+
+          <div class="space-y-1 pt-1 border-t border-[#edf2f3]">
+            <div class="flex justify-between text-[#586f73]">
+              <span>Gross Subtotal ({quoteLines.length} lines):</span>
+              <b>${quoteSubtotal.toFixed(2)}</b>
+            </div>
+
+            {#if quoteDiscountAmount > 0}
+              <div class="flex justify-between text-teal-700 font-semibold">
+                <span>Applied Discount ({quoteDiscountType === 'percentage' ? `${quoteDiscountValue}%` : `$${quoteDiscountValue}`}):</span>
+                <b>-${quoteDiscountAmount.toFixed(2)}</b>
+              </div>
+            {/if}
+
+            <div class="flex justify-between text-[#586f73]">
+              <span>Taxable Base:</span>
+              <b>${quoteTaxableBase.toFixed(2)}</b>
+            </div>
+
+            <div class="flex justify-between text-[#586f73]">
+              <span>Automated Tax (18%):</span>
+              <b>${quoteTaxAmount.toFixed(2)}</b>
+            </div>
+
+            <div class="flex justify-between text-base font-extrabold text-[#183f42] pt-1.5 border-t border-[#edf2f3]">
+              <span>Total Quotation Amount:</span>
+              <span>${quoteTotalAmount.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer with Step 9 (Save Draft) & Step 10 (Send to Customer) -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-2 pt-4 border-t border-[#edf2f3] mt-4">
+        <Button
+          variant="outline"
+          size="xs"
+          onclick={() => (showCreateModal = false)}
+          class="rounded-xl h-8 px-4"
+        >
+          Cancel
+        </Button>
+
+        <div class="flex items-center gap-2">
+          <!-- Step 9: Save as Draft -->
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            onclick={() => handleSaveQuoteAction("Draft")}
+            class="rounded-xl h-8 px-4 border-[#183f42] text-[#183f42] hover:bg-[#e6f4f2] font-semibold"
+          >
+            Save as Draft
+          </Button>
+
+          <!-- Step 10: Send to Customer -->
+          <Button
+            type="button"
+            size="xs"
+            onclick={() => handleSaveQuoteAction("Quotation")}
+            class="bg-[#183f42] hover:bg-[#123033] text-white rounded-xl h-8 px-5 font-semibold shadow-xs flex items-center gap-1.5"
+          >
+            <Send class="w-3.5 h-3.5" />
+            <span>Save &amp; Send to Customer</span>
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <!-- ========================================================================= -->
 <!-- MODAL: CREATE NEW QUOTATION TEMPLATE                                      -->
@@ -880,134 +1337,6 @@
 {/if}
 
 <!-- ========================================================================= -->
-<!-- MODAL: CREATE QUOTATION FROM TEMPLATE (Rich Live Preview)                -->
-<!-- ========================================================================= -->
-{#if showCreateModal}
-  <div class="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl border border-zinc-200 shadow-2xl max-w-xl w-full p-6 text-xs animate-in fade-in zoom-in-95 duration-150 my-6">
-      
-      <div class="flex items-center justify-between pb-3 border-b border-[#edf2f3] mb-4">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-xl bg-[#e6f4f2] text-[#183f42] flex items-center justify-center shadow-xs">
-            <HeartHandshake class="w-4 h-4" />
-          </div>
-          <div>
-            <h3 class="font-bold text-[#122b2e] text-sm">Instantiate Quotation from Template</h3>
-            <p class="text-[11px] text-[#7e9599]">Select a customer and template to generate an itemized client proposal.</p>
-          </div>
-        </div>
-        <button onclick={() => (showCreateModal = false)} class="p-1 rounded text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100">
-          <X class="w-4 h-4" />
-        </button>
-      </div>
-
-      <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-        <!-- Selectors -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <Label for="q-cust" class="font-semibold text-[#122b2e]">Target Customer *</Label>
-            <select
-              id="q-cust"
-              bind:value={selectedCustomerId}
-              class="w-full h-9 bg-[#f8fafb] border border-[#e5ecee] rounded-xl px-2.5 mt-1 text-xs focus:border-[#183f42]"
-            >
-              {#each ($customersStore || []) as c}
-                <option value={c.id}>{c.name} — {c.company}</option>
-              {/each}
-            </select>
-          </div>
-
-          <div>
-            <Label for="q-tmpl" class="font-semibold text-[#122b2e]">Quotation Template *</Label>
-            <select
-              id="q-tmpl"
-              bind:value={selectedTemplateId}
-              class="w-full h-9 bg-[#f8fafb] border border-[#e5ecee] rounded-xl px-2.5 mt-1 text-xs focus:border-[#183f42]"
-            >
-              {#each ($templatesStore || []) as t}
-                <option value={t.id}>{t.name} ({t.validity_days || 30} Days)</option>
-              {/each}
-            </select>
-          </div>
-        </div>
-
-        <!-- Live Preview of Computed Proposal -->
-        {#if activeSelectedTemplate}
-          {@const plan = getPlanObject(activeSelectedTemplate.plan_id)}
-          <div class="p-3.5 bg-[#f8fafb] border border-[#e5ecee] rounded-xl space-y-3">
-            <div class="flex items-center justify-between text-[11px]">
-              <span class="font-bold text-[#122b2e] flex items-center gap-1.5">
-                <Sparkles class="w-3.5 h-3.5 text-[#183f42]" /> Auto-Calculated Proposal Snapshot
-              </span>
-              <span class="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-medium">
-                Valid Until: <b>{calculatedValidUntil}</b>
-              </span>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-[#edf2f3]">
-              <div>
-                <span class="text-[#7e9599]">Target Plan:</span>
-                <b class="text-[#122b2e] block">{plan ? plan.name : (activeSelectedTemplate.plan_name || activeSelectedTemplate.plan_id)}</b>
-              </div>
-              <div>
-                <span class="text-[#7e9599]">Plan Frequency:</span>
-                <b class="text-[#183f42] block uppercase">{plan ? plan.billing_frequency : "Monthly"} (Min Qty: {plan ? plan.min_quantity : 1})</b>
-              </div>
-            </div>
-
-            <!-- Itemized lines -->
-            <div class="space-y-1 pt-1">
-              <span class="text-[10px] font-bold text-[#8c9ba5] uppercase tracking-wider block">
-                Pre-Filled Line Items:
-              </span>
-              {#each previewQuoteLines as pl}
-                <div class="p-2 bg-white rounded-lg border border-[#edf2f3] flex items-center justify-between text-[11px]">
-                  <div>
-                    <span class="font-medium text-[#122b2e]">{pl.product_name || pl.product_id}</span>
-                    <span class="text-[#7e9599] ml-1">× {pl.qty}</span>
-                    {#if pl.variant_name && pl.variant_name !== 'None'}
-                      <span class="text-[10px] text-[#183f42] ml-1 bg-[#f2f7f7] px-1 rounded border border-[#dde7e8]">
-                        {pl.variant_name}
-                      </span>
-                    {/if}
-                  </div>
-                  <span class="font-bold text-[#122b2e]">${pl.subtotal.toFixed(2)}</span>
-                </div>
-              {/each}
-            </div>
-
-            <!-- Totals breakdown -->
-            <div class="pt-2 border-t border-[#edf2f3] space-y-1 text-right text-xs">
-              <div class="flex justify-between text-[#586f73]">
-                <span>Taxable Subtotal:</span>
-                <b>${previewQuoteSubtotal.toFixed(2)}</b>
-              </div>
-              <div class="flex justify-between text-[#586f73]">
-                <span>Standard Tax (18%):</span>
-                <b>${previewQuoteTax.toFixed(2)}</b>
-              </div>
-              <div class="flex justify-between text-sm font-extrabold text-[#183f42] pt-1 border-t border-[#edf2f3]">
-                <span>Total Quotation Offer:</span>
-                <span>${previewQuoteTotal.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-        {/if}
-      </div>
-
-      <div class="flex items-center justify-end gap-2 pt-4 border-t border-[#edf2f3] mt-4">
-        <Button variant="outline" size="xs" onclick={() => (showCreateModal = false)} class="rounded-xl h-8 px-4">
-          Cancel
-        </Button>
-        <Button size="xs" onclick={handleInstantiateQuote} class="bg-[#183f42] hover:bg-[#123033] text-white rounded-xl h-8 px-5 font-semibold shadow-xs">
-          Generate Quotation Offer
-        </Button>
-      </div>
-    </div>
-  </div>
-{/if}
-
-<!-- ========================================================================= -->
 <!-- MODAL: VIEW QUOTE DETAILS & LINE ITEMS BREAKDOWN                          -->
 <!-- ========================================================================= -->
 {#if showViewQuoteModal && selectedQuote}
@@ -1062,8 +1391,13 @@
         <!-- Totals Summary -->
         <div class="pt-2 border-t border-zinc-100 space-y-1 text-right text-xs">
           <div><span class="text-[#7e9599]">Subtotal:</span> <b class="text-[#122b2e]">${Number(selectedQuote.subtotal || 0).toFixed(2)}</b></div>
+          {#if Number(selectedQuote.discount_amount || 0) > 0}
+            <div class="text-teal-700 font-semibold">
+              <span>Applied Discount:</span> -${Number(selectedQuote.discount_amount).toFixed(2)}
+            </div>
+          {/if}
           <div><span class="text-[#7e9599]">Tax Amount (18%):</span> <b class="text-[#122b2e]">${Number(selectedQuote.tax_amount || 0).toFixed(2)}</b></div>
-          <div class="text-sm font-extrabold text-[#183f42] pt-1">
+          <div class="text-sm font-extrabold text-[#183f42] pt-1 border-t border-[#edf2f3]">
             <span>Total Quotation:</span> ${Number(selectedQuote.total_amount || 0).toFixed(2)}
           </div>
         </div>
